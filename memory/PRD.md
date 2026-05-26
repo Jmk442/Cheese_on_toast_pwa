@@ -18,22 +18,26 @@
 
 ## What's Been Implemented (2026-02)
 - **Frontend SPA** (React 19 + Tailwind + react-router 7) — no backend changes; recipes are static
-- Pages: `/` Home, `/recipes` list, `/recipe/:slug` detail (5 recipes), `/simulator` flagship cheese-on-toast sandbox, `/simulator/boiled-rice` rice boil-dry meter, `/simulator/saucepan-heating` saucepan stir meter
+- Pages: `/` Home, `/recipes` list, `/recipe/:slug` detail (**8 recipes**), `/simulator` flagship cheese-on-toast sandbox, `/simulator/boiled-rice` rice boil-dry meter, `/simulator/saucepan-heating` saucepan stir meter, `/achievements` badge gallery
+- **Recipes**: cheese on toast (flagship), boiled rice, fried rice, sushi hand rolls, no-microwave saucepan heating, **scrambled eggs**, **simple pasta**, **beans on toast**
 - **Cheese-on-toast sandbox**: 6 stages, 8 timer phases, accelerated time, outcome panel
-- **Rice sandbox (NEW)**: water-level gauge + heat dial (OFF/LOW/HIGH). Boil-window detection — if user leaves it on HIGH past boil → BOILED OVER. Outcomes: PERFECT / ALMOST / UNDERCOOKED / BURNT BOTTOM / PAN DESTROYED
-- **Saucepan sandbox (NEW)**: stick-meter (rises with heat, resets on STIR) + temperature gauge with 80% sweet-zone marker. Outcomes: PERFECTLY HEATED / LUKEWARM / STILL COLD / STUCK BOTTOM / BURNT / SCORCHED
-- Each recipe with `simulatorPath` shows "Practice in the Sandbox" CTA on its detail page
-- CSS-illustrated toaster, saucepan, animated flames, smoke, shake/blink/scan-line keyframes
+- **Rice sandbox**: water-level gauge + heat dial. Outcomes: PERFECT / ALMOST / UNDERCOOKED / BURNT BOTTOM / PAN DESTROYED / BOILED OVER
+- **Saucepan sandbox**: stick-meter + temp gauge with 80% sweet-zone marker. Outcomes: PERFECT / LUKEWARM / COLD / STUCK / BURNT / SCORCHED
+- **Difficulty levels** (EASY / NORMAL / HARD): tick-rate multipliers applied across all 3 sims; HARD narrows perfect windows. Picker locks while sim is running.
+- **Persistent achievements** (localStorage `cot.stats.v1`): 8 badges (First Perfect Toast, Golden Master, Rice Rookie, Rice Pro, Stir Pro, Chaos Merchant, Sandbox Tour, Iron Chef). In-app banner on unlock, dedicated `/achievements` page with grid + stats overview + reset.
+- Home page strip linking to achievements showing `<n> of 8 unlocked`
+- Header buttons: TROPHIES + SANDBOX
 - Audio cues (Web Audio API beeps) with mute toggle
-- **SEO**: static index.html with Recipe JSON-LD for flagship; dynamic SeoHead.jsx per-page; sitemap.xml lists 3 simulators; robots.txt
+- **SEO**: static index.html with Recipe JSON-LD for flagship; dynamic SeoHead.jsx per-page; sitemap.xml lists all sims, recipes and achievements
 - **PWA**: manifest.json, apple-mobile-web-app meta, theme-color #09090B
-- Tested via testing agent: iter 1 (14/14 pass) + iter 2 (12/12 pass on new sims + regression)
+- Tested via testing agent: iter 1 (14/14), iter 2 (12/12), iter 3 (47/48) — single soft-fail was a test-timing issue on the entry-animating banner, not a bug
 
 ## Backlog (Future)
 **P1 — High value enhancements**
 - "Cooked it!" share button with auto-generated OG image (shareability → traffic loop)
 - Voice narration of steps (hands-free while cooking)
-- Difficulty levels for sims (easy / normal / "no second chances")
+- Unique illustrations / photos per recipe (currently scrambled-eggs/pasta share fried-rice asset; beans-on-toast shares cheese-toast)
+- Dynamic phase labels in cheese sim that respect difficulty thresholds
 
 **P2**
 - More recipes (scrambled eggs, pasta, baked beans)

@@ -28,6 +28,7 @@ export const AchievementBanner = ({ badges = [], onClose, duration = 4500 }) => 
   return (
     <div
       data-testid="achievement-banner"
+      data-badge-ids={badges.map((b) => b.id).join(",")}
       className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-md animate-rise"
     >
       <div className="brut-card-yellow p-4 space-y-3">
