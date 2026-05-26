@@ -19,6 +19,7 @@ export const RECIPES = [
     difficulty: "EASY",
     image: ASSETS.cheeseToast,
     flagship: true,
+    simulatorPath: "/simulator",
     ingredients: [
       "2 slices of bread",
       "2 slices of cheese (or a small handful grated)",
@@ -56,6 +57,7 @@ export const RECIPES = [
     difficulty: "EASY",
     image: ASSETS.friedRice,
     eyesOnIt: true,
+    simulatorPath: "/simulator/boiled-rice",
     ingredients: [
       "1 mug of rice (long-grain or basmati)",
       "2 mugs of water",
@@ -147,6 +149,7 @@ export const RECIPES = [
     time: "5 min",
     difficulty: "EASY",
     image: ASSETS.toaster,
+    simulatorPath: "/simulator/saucepan-heating",
     ingredients: [
       "Whatever you want to heat (soup, beans, leftovers, pasta sauce, etc.)",
       "A splash of water (only if it's thick / sticky / dry)",

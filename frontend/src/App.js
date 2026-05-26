@@ -5,6 +5,8 @@ import Home from "@/pages/Home";
 import RecipeDetail from "@/pages/RecipeDetail";
 import RecipeList from "@/pages/RecipeList";
 import Simulator from "@/pages/Simulator";
+import RiceSimulator from "@/pages/RiceSimulator";
+import SaucepanSimulator from "@/pages/SaucepanSimulator";
 
 function App() {
   return (
@@ -15,6 +17,8 @@ function App() {
           <Route path="/recipes" element={<RecipeList />} />
           <Route path="/recipe/:slug" element={<RecipeDetail />} />
           <Route path="/simulator" element={<Simulator />} />
+          <Route path="/simulator/boiled-rice" element={<RiceSimulator />} />
+          <Route path="/simulator/saucepan-heating" element={<SaucepanSimulator />} />
           <Route path="*" element={<Home />} />
         </Routes>
       </Layout>

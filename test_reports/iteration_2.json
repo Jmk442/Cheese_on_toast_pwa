@@ -1,0 +1,26 @@
+{
+  "summary": "Iteration 2 — Frontend testing of the two new mini-simulators (/simulator/boiled-rice and /simulator/saucepan-heating) plus regression on /simulator and recipe CTAs. All 12 critical assertions PASS on mobile viewport 414x896. Rice sim: page loads with correct title/h1/controls; timer increments at expected ~30 simSec/realSec rate; BOILED OVER fail triggers when HIGH is left past the boil window; PERFECT RICE outcome reached by switching to LOW (~3s) and waiting until water bar dropped to <=10% (observed 8.4% at done); reset clears state to 0:00 / 100%. Pan sim: page loads with stick-meter, temp-gauge, all 3 heat buttons and start; STIR resets stick bar and increments pan-stir-count; PERFECTLY HEATED reached on MED with periodic stirring once temp-bar >= 80% (observed 82.56%); STILL COLD triggers on immediate Done; BURNT TO THE PAN auto-finishes on MED with zero stirs within ~10 real sec (stick stayed at 100 for 1.2s). Recipe→Sandbox CTAs verified: /recipe/boiled-rice → /simulator/boiled-rice, /recipe/saucepan-heating → /simulator/saucepan-heating, /recipe/cheese-on-toast → /simulator. Regression: original /simulator still loads and stage 0→1 transition works. No horizontal overflow on either new sim page at 414x896.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "RiceSimulator.jsx finish() uses an undeclared return path: if onDone() is hit with water === 0 it falls through to finish('scorched') but key 'scorched' uses 'BURNT BOTTOM' which may overlap with the 'didnt-turn-down' detection logically — verify intentional.",
+    "SaucepanSimulator.jsx — temp is capped at 120 and the 'scorched' (SCORCHED) auto-trigger fires at temp>=120. On MED that takes ~75 sim sec which is achievable but only if user never clicks Done. Behavior fine; just ensure stuck/burnt typically pre-empts it (it does at HIGH).",
+    "Both sims use setInterval inside useEffect with eslint-disable on exhaustive-deps; heat changes mid-tick rely on closure of `heat` captured at effect setup. Because the effect deps include `heat`, the interval is torn down and recreated on every heat change — this is OK but causes a brief gap; acceptable for this UX.",
+    "RiceSimulator stuckTimer-style auto-fail uses simSec>360 + heat HIGH + water<30 → 'disaster'. Could double-trigger with 'scorched' when water hits 0; finish() short-circuits via clearInterval and setOutcome, so React batching should prevent a second finish — but two parallel useEffect listeners on water/heat could race. Consider an `if (outcome) return` guard inside finish() to be defensive (currently only the calling effects guard with `outcome` from closure).",
+    "Both new sims correctly expose data-testid attributes (water-bar, stick-bar, temp-bar, ctrl-start/done/reset/stir, heat-*, pan-heat-*, *-outcome-title/body) — excellent testability."
+  ],
+  "updated_files": [],
+  "success_rate": { "backend": "N/A (frontend-only)", "frontend": "100% (12/12 assertions pass)" },
+  "test_credentials": "N/A — no auth",
+  "seed_data_creation": "None — pure frontend state machines",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Both new sims pass full state-machine flows on mobile 414x896. Rice sim timing observed: timer reached 1:00 after ~1.5 real sec from 0:12 (confirms ~30 simSec/realSec). Water drop on LOW observed at ~4.5%/sec (matches 0.45/tick * 5 ticks/sec) → ~15 real sec from 76% to 8% post-switch. Pan temp on MED reached 82.56% after ~17 stir-cycles (~42 real sec, matches 1.6/sec * 200ms tick). Pan burnt auto-trigger took <25 real sec on MED with no stirs. Original /simulator regression confirmed via ctrl-insert-bread stage 0→1.",
+  "rca of the issue": "N/A — no failures found. Initial T11 reported a false negative because I probed [data-testid=ctrl-start] on /simulator (which uses ctrl-insert-bread instead); re-ran with correct selector and confirmed regression PASS."
+}

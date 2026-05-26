@@ -48,9 +48,9 @@ export default function RecipeDetail() {
           <img src={recipe.image} alt={recipe.title} className="w-full h-56 sm:h-72 object-cover" />
         </div>
 
-        {recipe.slug === "cheese-on-toast" && (
-          <Link to="/simulator" data-testid="open-sandbox-from-recipe" className="btn-arcade w-full sm:w-auto">
-            <Zap size={18} /> Practice in the Oven Sandbox
+        {recipe.simulatorPath && (
+          <Link to={recipe.simulatorPath} data-testid="open-sandbox-from-recipe" className="btn-arcade w-full sm:w-auto">
+            <Zap size={18} /> Practice in the Sandbox
           </Link>
         )}
       </header>
