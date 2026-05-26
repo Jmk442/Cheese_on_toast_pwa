@@ -1,0 +1,60 @@
+{
+  "summary": "Iter 6 (AUD currency switch) tested. Backend: 12/12 pytest green with new currency='aud' assertions on both monthly & lifetime checkout sessions (payment_transactions stores currency='aud', amount=3.99 / amount=24.99). Frontend: /premium, /settings, /collections/budget, /collections/meal-plan all show correct A$ pricing — verified contains A$3.99, A$24.99, A$4, A$2, A$28, A$30, Melbourne & Sydney testimonials; ZERO bare USD '$' or GBP '£' on those pages. No mobile (414x896) overflow on /premium, /settings, /collections/budget, /collections/meal-plan. PaywallTrigger.jsx parent-psych copy & lifetime CTA confirmed via source. REGRESSION: cheese-sim outcome flagged in iter-5 is NOT flaky — reproduced again. Real UX bug: ctrl-take-out button (y=861 on a 896 viewport) is covered by the fixed bottom nav (z-30); a centred click lands on nav-recipes instead. When the button is scrolled into view first, outcome renders correctly (outcome, outcome-title='PERFECT!', ctrl-share, ctrl-reset all present; URL stays /simulator).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Simulator (stage 5 ctrl-take-out)", "issue": "On mobile 414x896 the ctrl-take-out button renders at y≈861 (bottom-nav covers y≈840–896 at z-30). User tapping the button or any automation clicking at its centre hits the bottom-nav 'Recipes' item beneath it and navigates to /recipes instead of finishing the sim. Reproduced 2/2. After scroll_into_view → outcome panel renders correctly with PERFECT result.", "selector": "[data-testid=ctrl-take-out]", "priority": "HIGH"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/simulator (mobile)", "issues": ["Bottom nav (fixed, z-30) overlaps ctrl-take-out on 414x896 — main has pb-28 (112px) which is not enough once phase-readout pushes controls down. Consider bumping main pb to pb-32 or making controls sticky above the nav."]}
+    ]
+  },
+  "leftover_text_fixed": [
+    "/app/frontend/src/data/collections.js — PREMIUM_BADGES Budget Boss description had a stray '£2'; replaced with 'A$2'. (Constant currently unused but kept consistent.)"
+  ],
+  "test_report_links": [
+    "/app/backend/tests/test_premium_api.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "verified_aud_text": {
+    "/premium": "Contains A$3.99 (×4), A$24.99 (×3), A$4 (testimonial), Melbourne, Sydney. No bare $ or £.",
+    "/settings (trial user)": "settings-lifetime-upsell text = 'UPGRADE TO LIFETIME (A$24.99)'.",
+    "/collections/budget": "H1 = 'BUDGET MEALS (A$2 OR LESS)', badge = 'A$2 OR LESS'. No £.",
+    "/collections/meal-plan": "Renders 'THE A$30 WEEK' + 'Total shop ~A$28'. No £.",
+    "PaywallTrigger.jsx (source)": "parent-psych line = 'A$3.99/mo or one-time A$24.99 forever'; lifetime CTA = 'See Lifetime (A$24.99)'.",
+    "Home / /collections / /achievements": "No £ characters anywhere."
+  },
+  "verified_backend": {
+    "test_premium_api.py": "12/12 pass (2.87s). test_checkout_monthly: amount=3.99 currency=aud package=monthly. test_checkout_lifetime: amount=24.99 currency=aud package=lifetime. payment_transactions persists currency='aud' for both.",
+    "PACKAGES dict": "monthly + lifetime both currency='aud'."
+  },
+  "cheese_sim_regression_rca": {
+    "is_flaky": false,
+    "reproduced": "2/2 attempts",
+    "root_cause": "ctrl-take-out button bounding box (x=20, y=861, w=374, h=57) sits underneath the fixed bottom nav (`fixed bottom-0 z-30`). The nav is the top-z element at that y range, so any click/tap at the button centre (~x=207, y=890) dispatches to the nav item beneath (nav-recipes at centre slot of 5). React-Router navigates to /recipes; the underlying ctrl-take-out onClick never fires; outcome state is never set.",
+    "evidence": "After calling btn.scroll_into_view_if_needed() (moves button up ~22px out from under the nav) and clicking without force=True, the outcome panel renders with [data-testid=outcome], outcome-title='PERFECT!', ctrl-share, ctrl-reset; URL stays /simulator. With force=True click at original y=890 → URL=/recipes.",
+    "suggested_fix": "Either (a) increase `pb-28` on <main> in Layout.jsx to `pb-32` or `pb-36` to keep the last control above the bottom nav, OR (b) add `position: sticky; bottom: 80px; z-index: 31` to the active stage-5 control so the button is always visible above the nav, OR (c) wrap the controls block in a container that auto-scrolls when stage transitions to 5.",
+    "iter5_note": "Main agent's manual-retest claim of 'flaky' was incorrect — likely passed manually because manual scroll repositions the button. Automated viewport-fixed clicks hit the bug deterministically."
+  },
+  "action_items": [
+    "FIX (HIGH): Bottom-nav overlaps stage-5 ctrl-take-out on mobile — bump <main> bottom padding in Layout.jsx (pb-28 → pb-36) or make the stage-5 control sticky-above-nav. Affects real users on 414x896-class phones, not just automation.",
+    "Optional: re-test sim flow after fix to confirm outcome panel + ctrl-share + ctrl-reset still render and URL stays /simulator."
+  ],
+  "critical_code_review_comments": [
+    "Currency change is clean — backend PACKAGES dict is the single source of truth and the existing /checkout/session route picks up `currency` from PACKAGES; no hardcoded currency elsewhere.",
+    "Frontend AUD text is consistent: A$ prefix used everywhere (Paywall, Settings, PaywallTrigger, collections data).",
+    "PREMIUM_BADGES constant is exported but no longer imported anywhere — dead export. Either wire it into /achievements or remove to avoid future drift like the £2 leftover I just fixed.",
+    "Layout.jsx pb-28 is not adaptive to stage-5 controls that grow taller (phase-readout + larger CTA). Consider an env(safe-area-inset-bottom)-aware bottom spacer instead."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_premium_api.py (added currency='aud' assertions for monthly + lifetime)",
+    "/app/frontend/src/data/collections.js (PREMIUM_BADGES p-budget '£2' → 'A$2')"
+  ],
+  "success_rate": {"backend": "100% (12/12)", "frontend": "AUD checks 100% — sim regression CONFIRMED-FAILING (recurrence of iter-5 issue)"},
+  "test_credentials": "n/a — anonymous device-id identity, no auth",
+  "seed_data_creation": "TEST-prefixed users/transactions cleaned up by teardown_module in test_premium_api.py",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "AUD migration is fully complete and verified end-to-end. The ONLY outstanding bug is the cheese-sim ctrl-take-out being overlapped by bottom nav on mobile. Reproduction: viewport 414x896, /simulator, insert bread → toast → wait 4s → cheese → grill → wait 6.5s → click ctrl-take-out WITHOUT scroll_into_view → URL flips to /recipes. After Layout pb fix, regression run should re-do this exact flow and confirm outcome panel + ctrl-share + ctrl-reset + URL=/simulator."
+}

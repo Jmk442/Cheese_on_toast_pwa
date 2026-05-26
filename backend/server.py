@@ -42,8 +42,8 @@ logger = logging.getLogger("cot")
 # Packages — defined on backend ONLY for security
 # -----------------------------------------------------------------------------
 PACKAGES = {
-    "monthly":  {"amount": 3.99,  "currency": "usd", "label": "1 month premium", "extends_days": 30,   "lifetime": False},
-    "lifetime": {"amount": 24.99, "currency": "usd", "label": "Lifetime premium", "extends_days": None, "lifetime": True},
+    "monthly":  {"amount": 3.99,  "currency": "aud", "label": "1 month premium", "extends_days": 30,   "lifetime": False},
+    "lifetime": {"amount": 24.99, "currency": "aud", "label": "Lifetime premium", "extends_days": None, "lifetime": True},
 }
 
 TRIAL_DAYS = 3

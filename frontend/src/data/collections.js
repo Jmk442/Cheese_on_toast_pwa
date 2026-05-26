@@ -19,11 +19,12 @@ export const COLLECTIONS = [
   },
   {
     slug: "budget",
-    title: "Budget Meals (£2 or less)",
+    title: "Budget Meals (A$2 or less)",
+    shortTitle: "Budget Meals",
     tagline: "When the bank balance hits single digits.",
     positioning: "Students — eat well for the price of a coffee.",
     color: "#84CC16",
-    badge: "£2 OR LESS",
+    badge: "A$2 OR LESS",
     recipes: [
       { slug: "egg-fried-rice", title: "Cupboard Egg Fried Rice", time: "8 min", body: "2 eggs + day-old rice + frozen peas + soy. The cheapest hot meal on earth." },
       { slug: "lentil-curry", title: "Lazy Lentil Curry", time: "20 min", body: "Tin of lentils + tin of chopped tomatoes + 1 tsp curry powder + onion. Simmer 15 min. With rice or naan." },
@@ -77,15 +78,15 @@ export const COLLECTIONS = [
     color: "#F59E0B",
     badge: "PLAN",
     recipes: [
-      { slug: "week-classic", title: "The Classic Week", time: "5 dinners", body: "Mon: pasta · Tue: stir fry · Wed: jacket + beans · Thu: omelette · Fri: pizza toast. Total shop ~£18." },
-      { slug: "week-budget", title: "The £20 Week", time: "7 dinners", body: "Bulk-cook chilli Sunday. Reheat 3 nights. Egg fried rice, pasta bake, beans on toast fill the rest." },
+      { slug: "week-classic", title: "The Classic Week", time: "5 dinners", body: "Mon: pasta · Tue: stir fry · Wed: jacket + beans · Thu: omelette · Fri: pizza toast. Total shop ~A$28." },
+      { slug: "week-budget", title: "The A$30 Week", time: "7 dinners", body: "Bulk-cook chilli Sunday. Reheat 3 nights. Egg fried rice, pasta bake, beans on toast fill the rest." },
     ],
   },
   {
     slug: "grocery",
     title: "Smart Grocery Lists",
     tagline: "Auto-generated from your meal plan. Aisle-by-aisle.",
-    positioning: "Saves £8-£12/week on impulse buys.",
+    positioning: "Saves A$10-A$15/week on impulse buys.",
     color: "#10B981",
     badge: "SHOPPING",
     recipes: [
@@ -136,7 +137,7 @@ export const COLLECTIONS = [
 // Additional premium-only achievements
 export const PREMIUM_BADGES = [
   { id: "p-survivor",    name: "Moving Out Survivor",  description: "Tried 3 recipes from the Moving Out Survival Pack.",  icon: "Backpack",   premium: true },
-  { id: "p-budget",      name: "Budget Boss",          description: "Cooked 3 budget meals under £2.",                     icon: "Wallet",     premium: true },
+  { id: "p-budget",      name: "Budget Boss",          description: "Cooked 3 budget meals under A$2.",                     icon: "Wallet",     premium: true },
   { id: "p-airfryer",    name: "Air Fryer Pilot",      description: "Mastered 3 air-fryer recipes.",                       icon: "Wind",       premium: true },
   { id: "p-meal-plan",   name: "Planner",              description: "Built your first weekly meal plan.",                  icon: "CalendarDays", premium: true },
   { id: "p-grocery",     name: "Grocery Hero",         description: "Sent a grocery list to your phone.",                  icon: "ShoppingCart", premium: true },

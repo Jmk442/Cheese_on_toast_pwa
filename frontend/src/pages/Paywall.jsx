@@ -39,7 +39,7 @@ export default function Paywall() {
     <div data-testid="paywall-page" className="space-y-8">
       <SeoHead
         title="Premium — Cheese on Toast"
-        description="3-day free trial. $3.99/mo or one-time $24.99 lifetime. Unlock 10 recipe collections, meal planner, grocery lists, offline access and cosmetics."
+        description="3-day free trial. A$3.99/mo or one-time A$24.99 lifetime. Unlock 10 recipe collections, meal planner, grocery lists, offline access and cosmetics."
         canonicalPath="/premium"
       />
 
@@ -49,7 +49,7 @@ export default function Paywall() {
           The kitchen <span className="text-brand-primary">levelled up.</span>
         </h1>
         <p className="font-mono text-base text-foreground/80 max-w-xl">
-          3-day free trial. After that, $3.99/mo — or $24.99 once, forever.
+          3-day free trial. After that, A$3.99/mo — or A$24.99 once, forever.
         </p>
       </header>
 
@@ -82,8 +82,8 @@ export default function Paywall() {
               <span className="font-display font-black uppercase text-sm">Monthly</span>
               {pkg === "monthly" && <Check size={18} className="text-brand-primary" />}
             </div>
-            <div className="font-display font-black text-3xl">$3.99<span className="text-foreground/40 text-sm font-mono">/mo</span></div>
-            <div className="font-mono text-xs text-foreground/60">3 days free, then $3.99/mo. Cancel anytime.</div>
+            <div className="font-display font-black text-3xl">A$3.99<span className="text-foreground/40 text-sm font-mono">/mo</span></div>
+            <div className="font-mono text-xs text-foreground/60">3 days free, then A$3.99/mo. Cancel anytime.</div>
           </button>
 
           <button
@@ -100,7 +100,7 @@ export default function Paywall() {
               <span className="font-display font-black uppercase text-sm">Lifetime</span>
               {pkg === "lifetime" && <Check size={18} className="text-brand-primary" />}
             </div>
-            <div className="font-display font-black text-3xl">$24.99<span className="text-foreground/40 text-sm font-mono">once</span></div>
+            <div className="font-display font-black text-3xl">A$24.99<span className="text-foreground/40 text-sm font-mono">once</span></div>
             <div className="font-mono text-xs text-foreground/60">Pay once. Every feature, every new collection, forever.</div>
           </button>
         </div>
@@ -113,7 +113,7 @@ export default function Paywall() {
           className="btn-arcade w-full text-base sm:text-lg"
         >
           <Sparkles size={20} />
-          {pkg === "lifetime" ? "Get Lifetime — $24.99" : "Start 3-Day Free Trial"}
+          {pkg === "lifetime" ? "Get Lifetime — A$24.99" : "Start 3-Day Free Trial"}
         </button>
         {err && (
           <div className="border-2 border-brand-danger p-3 flex items-start gap-2 text-brand-danger font-mono text-xs" data-testid="paywall-error">
@@ -170,8 +170,8 @@ export default function Paywall() {
       <section data-testid="trust-section" className="space-y-2 pb-4">
         <h2 className="font-display font-black uppercase tracking-tight text-xl">Why parents choose this</h2>
         <ul className="space-y-2 font-mono text-sm text-foreground/80">
-          <li className="border-l-2 border-brand-primary pl-3">"My 14yo now makes their own dinner. Best £4 ever." — Rachel, Bristol</li>
-          <li className="border-l-2 border-brand-primary pl-3">"He cooked the whole family pasta last week. I cried a bit." — Mark, Leeds</li>
+          <li className="border-l-2 border-brand-primary pl-3">"My 14yo now makes their own dinner. Best A$4 ever." — Rachel, Melbourne</li>
+          <li className="border-l-2 border-brand-primary pl-3">"He cooked the whole family pasta last week. I cried a bit." — Mark, Sydney</li>
         </ul>
         <p className="font-mono text-[10px] uppercase tracking-widest text-foreground/40">* Testimonials. Real reviews coming soon.</p>
       </section>

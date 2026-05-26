@@ -158,7 +158,7 @@ export const PaywallTrigger = () => {
 
         <div className="border-2 border-brand-primary/60 p-3 bg-ink/60 space-y-1">
           <div className="font-mono text-[10px] uppercase tracking-widest text-brand-primary">For parents</div>
-          <p className="font-mono text-xs text-foreground/80">A confident, fed teen for less than the cost of one takeaway a month. £3.99/mo or one-time £24.99 forever.</p>
+          <p className="font-mono text-xs text-foreground/80">A confident, fed teen for less than the cost of one takeaway a month. A$3.99/mo or one-time A$24.99 forever.</p>
         </div>
 
         <div className="grid grid-cols-1 gap-2">
@@ -176,7 +176,7 @@ export const PaywallTrigger = () => {
             onClick={() => track("paywall_cta_click", { kind: variant, target: "lifetime" })}
             className="btn-arcade btn-ghost w-full"
           >
-            See Lifetime ($24.99)
+            See Lifetime (A$24.99)
           </Link>
           <button
             type="button"

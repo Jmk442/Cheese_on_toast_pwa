@@ -116,6 +116,7 @@ def test_checkout_monthly_returns_stripe_url(session, mongo, device_id):
     assert txn["granted"] is False
     assert txn["package"] == "monthly"
     assert abs(txn["amount"] - 3.99) < 0.001
+    assert txn["currency"] == "aud"
 
 
 # --- Checkout session: lifetime amount ---
@@ -132,6 +133,7 @@ def test_checkout_lifetime_amount(session, mongo, device_id):
     assert txn is not None
     assert abs(txn["amount"] - 24.99) < 0.001
     assert txn["package"] == "lifetime"
+    assert txn["currency"] == "aud"
 
 
 # --- Checkout session: invalid package ---

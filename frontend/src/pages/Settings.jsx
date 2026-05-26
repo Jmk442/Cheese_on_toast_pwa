@@ -68,7 +68,7 @@ export default function Settings() {
           )}
           {isPremium && !isLifetime && (
             <Link to="/premium#lifetime" data-testid="settings-lifetime-upsell" className="btn-arcade btn-ghost w-full mt-2 inline-flex">
-              Upgrade to Lifetime ($24.99)
+              Upgrade to Lifetime (A$24.99)
             </Link>
           )}
         </div>
