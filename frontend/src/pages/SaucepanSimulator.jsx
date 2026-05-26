@@ -2,6 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Play, RotateCcw, Volume2, VolumeX } from "lucide-react";
 import { SeoHead } from "../components/SeoHead";
+import { DifficultyPicker } from "../components/DifficultyPicker";
+import { AchievementBanner } from "../components/AchievementBanner";
+import { recordOutcome, BADGES } from "../lib/achievements";
 
 /**
  * Saucepan Stir Meter Simulator
@@ -51,6 +54,10 @@ export default function SaucepanSimulator() {
   const [missedStirs, setMissedStirs] = useState(0);
   const [outcome, setOutcome] = useState(null);
   const [muted, setMuted] = useState(false);
+  const [difficulty, setDifficulty] = useState("NORMAL");
+  const [newBadges, setNewBadges] = useState([]);
+
+  const diffRate = difficulty === "HARD" ? 1.4 : difficulty === "EASY" ? 0.75 : 1.0;
 
   const intRef = useRef(null);
   const audioRef = useRef(null);
@@ -60,9 +67,9 @@ export default function SaucepanSimulator() {
     intRef.current = setInterval(() => {
       const dt = TICK / 1000; // seconds
       const cfg =
-        heat === "LOW"  ? { temp: 0.6, stick: 6 } :
-        heat === "MED"  ? { temp: 1.6, stick: 12 } :
-        heat === "HIGH" ? { temp: 3.2, stick: 28 } :
+        heat === "LOW"  ? { temp: 0.6 * diffRate, stick: 6  * diffRate } :
+        heat === "MED"  ? { temp: 1.6 * diffRate, stick: 12 * diffRate } :
+        heat === "HIGH" ? { temp: 3.2 * diffRate, stick: 28 * diffRate } :
                           { temp: 0,   stick: 0 };
 
       setTemp((t) => Math.min(120, t + cfg.temp * dt));
@@ -72,7 +79,7 @@ export default function SaucepanSimulator() {
       });
     }, TICK);
     return () => clearInterval(intRef.current);
-  }, [started, outcome, heat]);
+  }, [started, outcome, heat, diffRate]);
 
   // Track "stuck for too long"
   useEffect(() => {
@@ -127,6 +134,10 @@ export default function SaucepanSimulator() {
     clearInterval(intRef.current);
     setOutcome(result);
     if (!muted) beep(audioRef, key === "perfect" ? 1200 : 220, 0.4);
+    const unlocked = recordOutcome("pan", key, difficulty);
+    if (unlocked.length > 0) {
+      setNewBadges(BADGES.filter((b) => unlocked.includes(b.id)));
+    }
   };
 
   const reset = () => {
@@ -139,6 +150,7 @@ export default function SaucepanSimulator() {
     setStirCount(0);
     setMissedStirs(0);
     setOutcome(null);
+    setNewBadges([]);
   };
 
   const stickColor =
@@ -167,6 +179,7 @@ export default function SaucepanSimulator() {
 
   return (
     <div data-testid="pan-sim-page" className="space-y-6">
+      <AchievementBanner badges={newBadges} onClose={() => setNewBadges([])} />
       <SeoHead
         title="Saucepan Sandbox — Heat Food Without Burning It"
         description="Practice heating food in a saucepan. Stir often, keep the heat at medium, don't burn the bottom. Visual stir meter and temperature gauge."
@@ -191,6 +204,8 @@ export default function SaucepanSimulator() {
           Pick MED. Stir before the stick meter goes red. Pull it when it's hot.
         </p>
       </header>
+
+      <DifficultyPicker value={difficulty} onChange={setDifficulty} locked={started && !outcome} />
 
       {/* CRT */}
       <div data-testid="pan-screen" className="crt p-6 sm:p-8 min-h-[320px] flex items-center justify-center relative">

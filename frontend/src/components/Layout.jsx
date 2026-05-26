@@ -22,7 +22,7 @@ export const Layout = ({ children }) => {
   return (
     <div className="App relative z-[2] min-h-screen flex flex-col" data-testid="app-shell">
       <header className="sticky top-0 z-30 border-b-2 border-white/90 bg-ink/95 backdrop-blur">
-        <div className="max-w-3xl mx-auto px-5 py-3 flex items-center justify-between">
+        <div className="max-w-3xl mx-auto px-5 py-3 flex items-center justify-between gap-2">
           <Link to="/" data-testid="brand-link" className="flex items-center gap-2 group">
             <span className="inline-flex w-7 h-7 items-center justify-center bg-brand-primary text-ink border-2 border-white">
               <Flame size={16} strokeWidth={2.5} />
@@ -31,6 +31,14 @@ export const Layout = ({ children }) => {
               Cheese<span className="text-brand-primary">/</span>Toast
             </span>
           </Link>
+          <div className="flex items-center gap-2">
+          <Link
+            to="/achievements"
+            data-testid="header-trophy-link"
+            className="text-[10px] sm:text-xs font-mono uppercase tracking-widest px-2 py-1 border-2 border-white/60 text-foreground hover:border-brand-primary hover:text-brand-primary transition-colors"
+          >
+            Trophies
+          </Link>
           <Link
             to="/simulator"
             data-testid="header-sim-link"
@@ -38,6 +46,7 @@ export const Layout = ({ children }) => {
           >
             Sandbox
           </Link>
+          </div>
         </div>
       </header>
 

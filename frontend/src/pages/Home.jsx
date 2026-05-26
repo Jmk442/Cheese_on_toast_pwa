@@ -1,11 +1,14 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Clock, Zap, AlertTriangle, Flame } from "lucide-react";
+import { ArrowRight, Clock, Zap, AlertTriangle, Flame, Trophy } from "lucide-react";
 import { RECIPES, ASSETS } from "../data/recipes";
 import { SeoHead, buildRecipeJsonLd } from "../components/SeoHead";
+import { BADGES, getStats } from "../lib/achievements";
 
 export default function Home() {
   const flagship = RECIPES.find((r) => r.flagship);
   const others = RECIPES.filter((r) => !r.flagship);
+  const stats = getStats();
+  const unlockedCount = stats.unlocked.length;
 
   return (
     <div data-testid="home-page" className="space-y-10">
@@ -79,6 +82,28 @@ export default function Home() {
             </div>
           </div>
         </div>
+      </section>
+
+      {/* ACHIEVEMENTS STRIP */}
+      <section data-testid="achievements-strip">
+        <Link
+          to="/achievements"
+          data-testid="achievements-link"
+          className="brut-card p-4 flex items-center justify-between group hover:translate-x-[-2px] hover:translate-y-[-2px]"
+        >
+          <div className="flex items-center gap-3">
+            <span className="inline-flex w-10 h-10 items-center justify-center bg-brand-primary text-ink border-2 border-white">
+              <Trophy size={18} strokeWidth={2.5} />
+            </span>
+            <div>
+              <div className="font-display font-black uppercase text-sm sm:text-base tracking-tight">Trophies</div>
+              <div className="font-mono text-[11px] uppercase tracking-widest text-foreground/60">
+                <span className="text-brand-primary font-bold">{unlockedCount}</span> of {BADGES.length} unlocked
+              </div>
+            </div>
+          </div>
+          <ArrowRight size={18} className="text-foreground/60 group-hover:text-brand-primary transition-colors" />
+        </Link>
       </section>
 
       {/* RECIPES GRID */}

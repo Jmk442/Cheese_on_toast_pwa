@@ -2,6 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Play, RotateCcw, Flame, Volume2, VolumeX } from "lucide-react";
 import { SeoHead } from "../components/SeoHead";
+import { DifficultyPicker } from "../components/DifficultyPicker";
+import { AchievementBanner } from "../components/AchievementBanner";
+import { recordOutcome, BADGES } from "../lib/achievements";
 
 /**
  * Rice Boil-Dry Meter Simulator
@@ -50,6 +53,10 @@ export default function RiceSimulator() {
   const [turnedDownInTime, setTurnedDownInTime] = useState(null); // true/false
   const [outcome, setOutcome] = useState(null);
   const [muted, setMuted] = useState(false);
+  const [difficulty, setDifficulty] = useState("NORMAL");
+  const [newBadges, setNewBadges] = useState([]);
+
+  const diffRate = difficulty === "HARD" ? 1.4 : difficulty === "EASY" ? 0.75 : 1.0;
 
   const intRef = useRef(null);
   const audioRef = useRef(null);
@@ -70,11 +77,11 @@ export default function RiceSimulator() {
           setTurnedDownInTime(heat !== "HIGH");
         }
 
-        // Water consumption rate
+        // Water consumption rate (scaled by difficulty)
         setWater((w) => {
           let rate = 0;
-          if (heat === "HIGH") rate = 1.4;
-          else if (heat === "LOW") rate = 0.45;
+          if (heat === "HIGH") rate = 1.4 * diffRate;
+          else if (heat === "LOW") rate = 0.45 * diffRate;
           // No evaporation before things get hot
           if (next < 60) rate = 0;
           const nw = Math.max(0, w - rate);
@@ -85,7 +92,7 @@ export default function RiceSimulator() {
     }, 200);
     return () => clearInterval(intRef.current);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [started, outcome, heat, muted, boilHit, turnedDownInTime]);
+  }, [started, outcome, heat, muted, boilHit, turnedDownInTime, diffRate]);
 
   // Auto-fail conditions while running
   useEffect(() => {
@@ -122,6 +129,10 @@ export default function RiceSimulator() {
     clearInterval(intRef.current);
     setOutcome(result);
     if (!muted) beep(audioRef, key === "perfect" ? 1200 : 220, 0.4);
+    const unlocked = recordOutcome("rice", key, difficulty);
+    if (unlocked.length > 0) {
+      setNewBadges(BADGES.filter((b) => unlocked.includes(b.id)));
+    }
   };
 
   const onDone = () => {
@@ -142,6 +153,7 @@ export default function RiceSimulator() {
     setBoilHit(false);
     setTurnedDownInTime(null);
     setOutcome(null);
+    setNewBadges([]);
   };
 
   const phaseLabel =
@@ -177,6 +189,7 @@ export default function RiceSimulator() {
 
   return (
     <div data-testid="rice-sim-page" className="space-y-6">
+      <AchievementBanner badges={newBadges} onClose={() => setNewBadges([])} />
       <SeoHead
         title="Boiled Rice Sandbox — Practice Without Burning the Pan"
         description="Practice boiling rice in our visual sandbox. Manage the heat, watch the water level, turn it off at the right moment. Get it wrong and watch the pan die."
@@ -206,6 +219,8 @@ export default function RiceSimulator() {
           Watch the water. Drop the heat when it boils. Turn off when it's nearly gone.
         </p>
       </header>
+
+      <DifficultyPicker value={difficulty} onChange={setDifficulty} locked={started && !outcome} />
 
       {/* CRT */}
       <div data-testid="rice-screen" className="crt p-6 sm:p-8 min-h-[340px] flex items-center justify-center relative">

@@ -3,6 +3,9 @@ import { Link } from "react-router-dom";
 import { ArrowLeft, Play, RotateCcw, Hand, Volume2, VolumeX } from "lucide-react";
 import { SeoHead } from "../components/SeoHead";
 import { ASSETS } from "../data/recipes";
+import { DifficultyPicker } from "../components/DifficultyPicker";
+import { AchievementBanner } from "../components/AchievementBanner";
+import { recordOutcome, BADGES } from "../lib/achievements";
 
 /**
  * 5-stage cheese-on-toast simulator.
@@ -62,8 +65,13 @@ export default function Simulator() {
   const [toasting, setToasting] = useState(false);
   const [outcome, setOutcome] = useState(null);
   const [muted, setMuted] = useState(false);
+  const [difficulty, setDifficulty] = useState("NORMAL");
+  const [newBadges, setNewBadges] = useState([]);
   const intervalRef = useRef(null);
   const audioCtxRef = useRef(null);
+
+  // Difficulty scaling on the grill — HARD narrows perfect window, EASY widens it.
+  const diffRate = difficulty === "HARD" ? 1.4 : difficulty === "EASY" ? 0.75 : 1.0;
 
   // Grill timer
   useEffect(() => {
@@ -100,9 +108,15 @@ export default function Simulator() {
 
   const finish = (atSec) => {
     let result;
+    // HARD difficulty narrows the perfect window: 150-200 instead of 120-210
+    // EASY widens it: 90-240
+    const easy = difficulty === "EASY";
+    const hard = difficulty === "HARD";
+    const perfLo = easy ? 90  : hard ? 150 : 120;
+    const perfHi = easy ? 240 : hard ? 200 : 210;
     if (atSec < 60) result = { key: "raw",     title: "BARELY MELTED",    body: "You pulled it too early. The cheese is sweaty, not melted.", tone: "text-foreground/60" };
-    else if (atSec < 120) result = { key: "pale", title: "A BIT PALE",     body: "Edible, but no colour. Give it another minute next time.", tone: "text-brand-primary" };
-    else if (atSec < 210) result = { key: "perfect", title: "PERFECT!",    body: "Golden, bubbling, exactly right. You did it.",              tone: "text-brand-perfect" };
+    else if (atSec < perfLo) result = { key: "pale", title: "A BIT PALE",     body: "Edible, but no colour. Give it another minute next time.", tone: "text-brand-primary" };
+    else if (atSec < perfHi) result = { key: "perfect", title: "PERFECT!",    body: "Golden, bubbling, exactly right. You did it.",              tone: "text-brand-perfect" };
     else if (atSec < 240) result = { key: "dark",  title: "A BIT DARK",    body: "Still edible. The crusts are crunchy. Lessons learned.",   tone: "text-brand-danger" };
     else if (atSec < 300) result = { key: "fire",  title: "ON FIRE",       body: "The grill is on fire. Turn it OFF. Stand back. No water on a fat fire.", tone: "text-brand-danger", img: ASSETS.fireFail };
     else result = { key: "nuclear", title: "NUCLEAR EXPLOSION",            body: "You walked away. The kitchen is gone. The dog hates you.",  tone: "text-brand-toxic", img: ASSETS.nukeFail };
@@ -110,6 +124,11 @@ export default function Simulator() {
     setStage(6);
     if (!muted) {
       beep(audioCtxRef, result.key === "perfect" ? 1200 : 220, 0.4);
+    }
+    // record + check for new badges
+    const unlocked = recordOutcome("cheese", result.key, difficulty);
+    if (unlocked.length > 0) {
+      setNewBadges(BADGES.filter((b) => unlocked.includes(b.id)));
     }
   };
 
@@ -119,12 +138,14 @@ export default function Simulator() {
     setSimSec(0);
     setOutcome(null);
     setToasting(false);
+    setNewBadges([]);
   };
 
   const phase = stage === 5 ? getPhase(simSec) : null;
 
   return (
     <div data-testid="simulator-page" className="space-y-6">
+      <AchievementBanner badges={newBadges} onClose={() => setNewBadges([])} />
       <SeoHead
         title="Cheese on Toast Sandbox — Practice the Recipe"
         description="Visual oven sandbox: practice making cheese on toast before you cook for real. Bread → toaster → cheese → grill. Time it right, or watch it explode."
@@ -158,6 +179,8 @@ export default function Simulator() {
           Get the timing right before you try it in the real kitchen.
         </p>
       </header>
+
+      <DifficultyPicker value={difficulty} onChange={setDifficulty} locked={stage > 0 && stage < 6} />
 
       {/* CRT SCREEN */}
       <div data-testid="sim-screen" className="crt p-6 sm:p-10 min-h-[340px] sm:min-h-[400px] flex items-center justify-center relative">
