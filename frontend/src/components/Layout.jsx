@@ -63,7 +63,18 @@ export const Layout = ({ children }) => {
         </div>
       </header>
 
-      <main className="flex-1 max-w-3xl w-full mx-auto px-5 pb-36 pt-4">{children}</main>
+      <main className="flex-1 max-w-3xl w-full mx-auto px-5 pt-4">{children}</main>
+
+      <footer data-testid="footer-legal" className="max-w-3xl w-full mx-auto px-5 pb-32 pt-6 border-t border-white/10 mt-8">
+        <div className="flex flex-wrap items-center justify-between gap-3 text-[10px] font-mono uppercase tracking-widest text-foreground/40">
+          <span>© {new Date().getFullYear()} Cheese on Toast · Made in Australia</span>
+          <div className="flex items-center gap-3">
+            <Link to="/privacy" data-testid="footer-privacy-link" className="hover:text-brand-primary">Privacy</Link>
+            <span className="text-foreground/20">·</span>
+            <Link to="/terms" data-testid="footer-terms-link" className="hover:text-brand-primary">Terms</Link>
+          </div>
+        </div>
+      </footer>
 
       <nav
         data-testid="bottom-nav"
