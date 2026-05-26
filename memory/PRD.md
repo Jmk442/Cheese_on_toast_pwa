@@ -53,11 +53,8 @@ A mobile-first teen cooking guide centred on "how to make cheese on toast" with 
 
 **P1 — High value**
 - Real push notifications (Web Push + VAPID + service worker) + email newsletter (Resend / Mailchimp)
-- Streak counter (perfect-runs-in-a-row)
-- Affiliate program launch (currently placeholder)
 - Family Plan tier (A$49.99/year covers 4 device-ids)
-- Wire `PREMIUM_BADGES` into `/achievements`
-- "Theme unlock as reward" loop (Mint after 5 perfect rice; Slime after Iron Chef; Neon Pink as referral reward)
+- Wire `PREMIUM_BADGES` into `/achievements` more visibly (currently shown but locked behind premium gate)
 
 **P2**
 - Avatar / kitchen scene customisation (currently theme only)
@@ -69,9 +66,19 @@ A mobile-first teen cooking guide centred on "how to make cheese on toast" with 
 **P3**
 - Recipe submission + moderation
 - iOS / Android native shells (Capacitor)
-- Wire `PREMIUM_BADGES` constant into Achievements page (currently dead export)
+- Refactor server.py into routers (auth/stripe/premium) — non-blocking
+- Affiliate program launch (currently placeholder)
+
+## What's New This Iteration (2026-02 — Streak + Theme Loop)
+- **Streak counter** added to `lib/achievements.js`: `currentStreak` + `bestStreak` per sim, persisted in localStorage. Any non-perfect outcome resets the streak. Three new badges: `streak-3` (Hot Streak), `streak-5` (On Fire), `streak-10` (Unbreakable). Total badges now 11 (was 8).
+- **Streak HUD** rendered in the top-right of every simulator (Cheese, Rice, Saucepan) with a flame icon, current streak number, and a tooltip showing best streak.
+- **Streak overview section** on `/achievements` shows current + best per sim with red flame when ≥3.
+- **Theme-as-reward** via new `lib/themes.js`: every paid theme has an explicit `unlock.badge` requirement, AND premium still unlocks them all. Locked themes show a lock-icon overlay and the achievement hint text in `/settings`.
+- **Two new themes** added: `inferno` (red, unlocked by `streak-5`) and `arcade` (cyan, unlocked by `iron-chef`). CSS variables in `index.css`.
+- **Tested**: iter 8 frontend testing agent 100% pass (9/9 groups verified).
 
 ## Next Action Items
-1. Cosmetic theme actually re-skins the UI (currently only saves preference)
-2. Wire premium badges into the Achievements page
-3. Real push notifications + email provider
+1. Real push notifications (Web Push + VAPID + service worker) — P1
+2. Family Plan tier A$49.99/year (4 device limit per account) — P1
+3. Email newsletter integration (Resend already wired for magic-links; reuse for digest)
+
