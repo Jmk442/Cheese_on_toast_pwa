@@ -17,10 +17,10 @@ import { SeoHead } from "../components/SeoHead";
 // Centralised so you only edit business details once.
 const BUSINESS = {
   name: "Cheese on Toast",
-  legalEntity: "__TODO_LEGAL_ENTITY_NAME__", // e.g. "Cheesy Pty Ltd ACN 123 456 789"
-  contactEmail: "__TODO_CONTACT_EMAIL__",     // e.g. "hello@cheeseontoast.app"
-  postalAddress: "__TODO_POSTAL_ADDRESS__",   // e.g. "PO Box 1, Sydney NSW 2000"
-  jurisdiction: "New South Wales, Australia", // state where you operate
+  legalEntity: "Cheese on Toast (ABN 82 097 590 964)",
+  contactEmail: "john.create@protonmail.com",
+  postalAddress: "Three Centenary Heights, Toowoomba QLD 4350, Australia",
+  jurisdiction: "Queensland, Australia",
   effectiveDate: "26 February 2026",
 };
 
