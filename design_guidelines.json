@@ -1,0 +1,120 @@
+{
+  "theme_and_archetype": {
+    "domain": "Teen Cooking / Recipe App",
+    "theme": "Dark",
+    "archetype": "Archetype 4 (Swiss & High-Contrast / Neo-Brutalist Dark Mode)",
+    "vibe": "Arcade Utility, irreverent, high-impact, punchy but extremely clear to read. A gamer aesthetic applied to a real-world utility app."
+  },
+  "typography": {
+    "font_strategy": "Anti-Default. Heavy, striking headings paired with a sterile/technical mono body to create an arcade/control-room tension.",
+    "fonts": {
+      "heading": "Unbounded",
+      "body": "IBM Plex Mono"
+    },
+    "hierarchy": {
+      "h1": "text-4xl sm:text-5xl tracking-tighter uppercase font-black",
+      "h2": "text-2xl sm:text-3xl tracking-tight font-bold",
+      "h3": "text-xl uppercase tracking-[0.2em] text-accent",
+      "body": "text-base sm:text-lg leading-relaxed font-mono",
+      "labels": "text-xs uppercase tracking-widest font-mono"
+    }
+  },
+  "color_system": {
+    "base": {
+      "background": "#09090B",
+      "surface": "#18181B",
+      "foreground": "#FAFAFA",
+      "border": "#FFFFFF"
+    },
+    "brand_accents": {
+      "primary": "#FACC15",
+      "danger": "#EF4444",
+      "toxic": "#84CC16",
+      "perfect": "#3B82F6"
+    },
+    "utility": {
+      "muted": "#A1A1AA"
+    },
+    "rules": {
+      "gradients": "BANNED. Use solid, high-contrast blocks of color.",
+      "shadows": "Neo-brutalist solid drop shadows only (e.g., 4px 4px 0px #FACC15). No soft blurred box-shadows."
+    }
+  },
+  "spacing_and_layout": {
+    "philosophy": "Mobile-First 'Tetris' Grid. Generous spacing (p-6, p-8) around critical interactive zones. Dense data (timers, meters) packed tightly like an arcade HUD.",
+    "container_padding": "p-6",
+    "corners": "rounded-none or max rounded-sm to maintain the harsh brutalist/retro look.",
+    "borders": "Exposed structural borders. 2px solid #FFFFFF or #3F3F46 on all interactive containers."
+  },
+  "component_strategies": {
+    "simulator_sandbox": {
+      "description": "The flagship feature. An interactive 'How to Make Cheese on Toast' simulator.",
+      "container": "Thick white borders, solid background. Arcade cabinet screen aesthetic.",
+      "states": [
+        { "step": 1, "action": "Put Bread In Toaster", "asset_key": "empty", "cta": "Insert Bread" },
+        { "step": 2, "action": "Toast It", "asset_key": "asset_toaster", "cta": "Toast (2 mins)" },
+        { "step": 3, "action": "Add Cheese", "asset_key": "toast_plain", "cta": "Apply Cheese" },
+        { "step": 4, "action": "Grill It", "asset_key": "asset_cheese_toast", "cta": "Start Grill Timer!" },
+        { "step": 5, "action": "The Grill Timer Phase", "mechanic": "Live timer running 0:00 to 6:00+. User must tap 'TAKE IT OUT' at the right moment." }
+      ],
+      "timer_phases": {
+        "0:00-1:00": { "status": "Melting...", "color": "text-foreground" },
+        "1:01-2:00": { "status": "Looking Good", "color": "text-primary" },
+        "2:01-3:00": { "status": "About Ready", "color": "text-perfect" },
+        "3:01-4:00": { "status": "TAKE IT OUT!", "color": "text-primary animate-pulse" },
+        "4:01-5:00": { "status": "FIRE!", "color": "text-danger animate-bounce", "asset_key": "asset_fire_fail" },
+        "5:01+": { "status": "NUCLEAR EXPLOSION", "color": "text-toxic animate-ping", "asset_key": "asset_nuclear_fail" }
+      },
+      "controls": "Massive, thumb-friendly buttons. 'Reset' button must appear prominently upon any failure."
+    },
+    "buttons": {
+      "primary": "bg-primary text-black border-2 border-primary hover:bg-black hover:text-primary transition-colors font-bold uppercase py-4 px-6",
+      "danger": "bg-danger text-black border-2 border-danger hover:bg-black hover:text-danger",
+      "ghost": "bg-transparent border-2 border-white text-white hover:bg-white hover:text-black"
+    },
+    "recipe_cards": {
+      "layout": "Bento-style blocks. Image taking up 60% of height. Bold title overlapping the border.",
+      "hover": "translate-x-1 translate-y-1 shadow-[4px_4px_0px_#FACC15]"
+    }
+  },
+  "seo_and_pwa_strategy": {
+    "pwa": "Include mobile web-app meta tags (apple-mobile-web-app-capable), theme-color meta tag (#09090B), and configure manifest.json for standalone installation.",
+    "seo": "Dynamically injected <title> and <meta> descriptions. MUST use Schema.org JSON-LD 'Recipe' type for every recipe (Cheese on Toast, Fried Rice, Sushi, Boiled Rice). Use semantic <article> and <section> tags."
+  },
+  "media_assets": {
+    "asset_toaster": {
+      "url": "https://static.prod-images.emergentagent.com/jobs/095313e1-c866-46da-b6f8-9627abf19281/images/f4536a742da90e213991ece0ec699908f7b036baa922c3dfbc6248a54513c03b.png",
+      "description": "Retro toaster"
+    },
+    "asset_cheese_toast": {
+      "url": "https://static.prod-images.emergentagent.com/jobs/095313e1-c866-46da-b6f8-9627abf19281/images/559651262da6b6a1ec6350987a71bcb9d257570ecb489bcc6bf13af421ab4988.png",
+      "description": "Perfectly melted cheese on toast"
+    },
+    "asset_fire_fail": {
+      "url": "https://static.prod-images.emergentagent.com/jobs/095313e1-c866-46da-b6f8-9627abf19281/images/4df9c0f1f963220663b92409061440949ea201c172a5a167038dab7287d78ff9.png",
+      "description": "Oven on fire fail state"
+    },
+    "asset_nuclear_fail": {
+      "url": "https://static.prod-images.emergentagent.com/jobs/095313e1-c866-46da-b6f8-9627abf19281/images/c4636fe9caeab2f79f27b4056be6455fd8fed7eaf485c1bd7c9f197860ce88e3.png",
+      "description": "Mushroom cloud nuclear explosion fail state"
+    },
+    "asset_fried_rice": {
+      "url": "https://static.prod-images.emergentagent.com/jobs/095313e1-c866-46da-b6f8-9627abf19281/images/23baa3b354c95073b9eb45fed3ca3bbf7725386a5477b8bcbaaeb9fcc1176a2f.png",
+      "description": "Fried rice recipe icon"
+    },
+    "asset_sushi": {
+      "url": "https://static.prod-images.emergentagent.com/jobs/095313e1-c866-46da-b6f8-9627abf19281/images/24f4767febfa9919e154a3a6c5aa113ed1daaac58d6a0928a6d6226a8ee2db3f.png",
+      "description": "Sushi recipe icon"
+    }
+  },
+  "instructions_to_main_agent": [
+    "CRITICAL: We are using purely JavaScript (.js/.jsx) files. Do NOT create or output .tsx or .ts files.",
+    "CRITICAL: Every interactive element, form, and state container MUST have a 'data-testid' attribute (e.g., data-testid='simulator-start-button', data-testid='disaster-meter', data-testid='recipe-card-sushi').",
+    "CRITICAL: Ensure the UI is heavily mobile-optimized (touch targets > 48px).",
+    "Do NOT use Inter, Roboto, or Space Grotesk. Import Unbounded and IBM Plex Mono via Google Fonts.",
+    "Build the 'How to Make Cheese on Toast' sandbox using React state to manage the 5 stages and the timer.",
+    "For the disaster states, use conditional rendering with Framer Motion (e.g. dramatic shaking for fire, intense scaling for nuclear).",
+    "Include schema.org JSON-LD structured data for recipes so Google picks up 'How to make cheese on toast'.",
+    "Use pure HTML/Tailwind for the marketing/landing page components. Use customized Shadcn UI (with sharp borders and no soft shadows) for utility elements if needed."
+  ]
+}
