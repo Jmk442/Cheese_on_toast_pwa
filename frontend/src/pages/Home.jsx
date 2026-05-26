@@ -1,14 +1,16 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Clock, Zap, AlertTriangle, Flame, Trophy } from "lucide-react";
+import { ArrowRight, Clock, Zap, AlertTriangle, Flame, Trophy, Crown, Sparkles } from "lucide-react";
 import { RECIPES, ASSETS } from "../data/recipes";
 import { SeoHead, buildRecipeJsonLd } from "../components/SeoHead";
 import { BADGES, getStats } from "../lib/achievements";
+import { usePremium } from "../context/PremiumContext";
 
 export default function Home() {
   const flagship = RECIPES.find((r) => r.flagship);
   const others = RECIPES.filter((r) => !r.flagship);
   const stats = getStats();
   const unlockedCount = stats.unlocked.length;
+  const { isPremium, isTrial, isLifetime, trialDaysLeft } = usePremium();
 
   return (
     <div data-testid="home-page" className="space-y-10">
@@ -82,6 +84,45 @@ export default function Home() {
             </div>
           </div>
         </div>
+      </section>
+
+      {/* PREMIUM STATE BANNER */}
+      <section data-testid="premium-banner-section">
+        {isPremium ? (
+          <Link
+            to="/collections"
+            data-testid="premium-active-banner"
+            className="brut-card-yellow p-4 flex items-center justify-between"
+          >
+            <div className="flex items-center gap-3">
+              <Crown size={20} className="text-ink" />
+              <div>
+                <div className="font-display font-black uppercase text-sm">
+                  {isLifetime ? "Lifetime Premium" : isTrial ? `Trial · ${trialDaysLeft ?? "—"} day${trialDaysLeft === 1 ? "" : "s"} left` : "Premium Active"}
+                </div>
+                <div className="font-mono text-[11px] uppercase tracking-widest">Open the 10 collections →</div>
+              </div>
+            </div>
+            <ArrowRight size={18} className="text-ink" />
+          </Link>
+        ) : (
+          <Link
+            to="/premium"
+            data-testid="premium-upsell-banner"
+            className="brut-card p-4 flex items-center justify-between group hover:translate-x-[-2px] hover:translate-y-[-2px]"
+          >
+            <div className="flex items-center gap-3">
+              <span className="inline-flex w-10 h-10 items-center justify-center bg-brand-primary text-ink border-2 border-white">
+                <Sparkles size={18} strokeWidth={2.5} />
+              </span>
+              <div>
+                <div className="font-display font-black uppercase text-sm">Start your 3-day free trial</div>
+                <div className="font-mono text-[11px] uppercase tracking-widest text-foreground/60">10 collections · meal plan · grocery</div>
+              </div>
+            </div>
+            <ArrowRight size={18} className="text-foreground/60 group-hover:text-brand-primary transition-colors" />
+          </Link>
+        )}
       </section>
 
       {/* ACHIEVEMENTS STRIP */}

@@ -172,11 +172,12 @@ function wrapText(ctx, text, maxWidth, maxLineCount = 3) {
  * Trigger native share / clipboard / download.
  * Returns "shared" | "downloaded" | "copied" | "cancelled" | "error".
  */
-export async function shareResult({ sim, title, body, detail, difficulty }) {
+export async function shareResult({ sim, title, body, detail, difficulty, referrerDeviceId }) {
   try {
     const blob = await renderShareCard({ sim, title, body, detail, difficulty });
     if (!blob) return "error";
-    const url = `${window.location.origin}/`;
+    const refPart = referrerDeviceId ? `?via=${encodeURIComponent(referrerDeviceId)}` : "";
+    const url = `${window.location.origin}/${refPart}`;
     const file = new File([blob], `cheese-on-toast-${sim}-${Date.now()}.png`, { type: "image/png" });
 
     // 1. Web Share API with file (modern mobile)

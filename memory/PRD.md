@@ -17,27 +17,25 @@
 7. data-testid on every interactive element
 
 ## What's Been Implemented (2026-02)
-- **Frontend SPA** (React 19 + Tailwind + react-router 7) — no backend changes; recipes are static
-- Pages: `/` Home, `/recipes` list, `/recipe/:slug` detail (**8 recipes**), `/simulator` flagship cheese-on-toast sandbox, `/simulator/boiled-rice` rice boil-dry meter, `/simulator/saucepan-heating` saucepan stir meter, `/achievements` badge gallery
-- **Recipes**: cheese on toast (flagship), boiled rice, fried rice, sushi hand rolls, no-microwave saucepan heating, **scrambled eggs**, **simple pasta**, **beans on toast**
-- **Cheese-on-toast sandbox**: 6 stages, 8 timer phases, accelerated time, outcome panel
-- **Rice sandbox**: water-level gauge + heat dial. Outcomes: PERFECT / ALMOST / UNDERCOOKED / BURNT BOTTOM / PAN DESTROYED / BOILED OVER
-- **Saucepan sandbox**: stick-meter + temp gauge with 80% sweet-zone marker. Outcomes: PERFECT / LUKEWARM / COLD / STUCK / BURNT / SCORCHED
-- **Difficulty levels** (EASY / NORMAL / HARD): tick-rate multipliers applied across all 3 sims; HARD narrows perfect windows. Picker locks while sim is running.
-- **Persistent achievements** (localStorage `cot.stats.v1`): 8 badges (First Perfect Toast, Golden Master, Rice Rookie, Rice Pro, Stir Pro, Chaos Merchant, Sandbox Tour, Iron Chef). In-app banner on unlock, dedicated `/achievements` page with grid + stats overview + reset.
-- Home page strip linking to achievements showing `<n> of 8 unlocked`
-- Header buttons: TROPHIES + SANDBOX
+- **Frontend SPA** (React 19 + Tailwind + react-router 7); backend only used as a one-shot script host for image gen
+- Pages: `/` Home, `/recipes` list, `/recipe/:slug` detail (8 recipes), `/simulator` flagship cheese-on-toast sandbox, `/simulator/boiled-rice` rice boil-dry meter, `/simulator/saucepan-heating` saucepan stir meter, `/achievements` badge gallery
+- **8 Recipes**: cheese on toast (flagship), boiled rice, fried rice, sushi hand rolls, no-microwave saucepan heating, scrambled eggs, simple pasta, beans on toast
+- **Unique illustrated images** for scrambled eggs, simple pasta, beans on toast and saucepan heating — generated via Gemini Nano Banana (`gemini-3.1-flash-image-preview`) to match the existing brutalist arcade aesthetic. Stored at `/app/frontend/public/img/recipe-*.png`. Generator script: `/app/backend/scripts/gen_recipe_images.py` (one-shot)
+- **3 Sandboxes**: cheese (6-stage state machine + 8 timer phases), rice (water gauge + heat dial), saucepan (stick-meter + temp gauge)
+- **Difficulty levels** (EASY / NORMAL / HARD): tick-rate multipliers; HARD narrows perfect windows; picker locks while running
+- **Persistent achievements** (localStorage `cot.stats.v1`): 8 badges with in-app banner unlock + dedicated `/achievements` page + home strip + TROPHIES header button
+- **Share-card system**: 1200×630 Canvas PNG generator with brand bar, sim badge, difficulty pill, big outcome title and footer URL. Uses Web Share API natively on mobile; falls back to PNG download + clipboard URL copy on desktop. `ShareButton` rendered on every sim outcome panel
 - Audio cues (Web Audio API beeps) with mute toggle
-- **SEO**: static index.html with Recipe JSON-LD for flagship; dynamic SeoHead.jsx per-page; sitemap.xml lists all sims, recipes and achievements
+- **SEO**: static index.html Recipe JSON-LD; dynamic SeoHead.jsx per-page; sitemap.xml covers all sims, recipes and achievements
 - **PWA**: manifest.json, apple-mobile-web-app meta, theme-color #09090B
-- Tested via testing agent: iter 1 (14/14), iter 2 (12/12), iter 3 (47/48) — single soft-fail was a test-timing issue on the entry-animating banner, not a bug
+- Tested via testing agent: iter 1 (14/14), iter 2 (12/12), iter 3 (47/48), iter 4 (12/12)
 
 ## Backlog (Future)
 **P1 — High value enhancements**
-- "Cooked it!" share button with auto-generated OG image (shareability → traffic loop)
-- Voice narration of steps (hands-free while cooking)
-- Unique illustrations / photos per recipe (currently scrambled-eggs/pasta share fried-rice asset; beans-on-toast shares cheese-toast)
+- Voice narration of recipe steps (hands-free while cooking)
+- Streak counter on achievements (perfect-runs-in-a-row, resets on non-perfect)
 - Dynamic phase labels in cheese sim that respect difficulty thresholds
+- Serve recipe PNGs as WebP for mobile data savings (~600KB → ~120KB each)
 
 **P2**
 - More recipes (scrambled eggs, pasta, baked beans)

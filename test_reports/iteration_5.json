@@ -1,0 +1,79 @@
+{
+  "summary": "Iteration 5 (Premium subscription launch) tested. Backend: all 12 pytest tests passed (100%). Frontend: paywall, collections, settings, meal-plan, grocery-list, saved, header pill, bottom nav, success polling, and mobile-overflow all verified on 414x896. Spec-vs-impl testid mismatches documented. Cheese sim regression: steps execute but outcome screen did not render in 2 attempts on /simulator (likely auto-navigation side-effect — needs main agent verification).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {"flow": "Cheese sim outcome", "issue": "After ctrl-grill → 8s wait → ctrl-take-out, page navigates to /recipes instead of staying on /simulator with outcome rendered. No [data-testid=outcome], no [data-testid=ctrl-share], no [data-testid=ctrl-reset] visible. Bottom nav 'RECIPES' becomes highlighted. Reproduced twice. Could be a regression introduced when Layout/Routes were updated for premium pages.", "affected_selectors": ["[data-testid=outcome]", "[data-testid=ctrl-share]", "[data-testid=ctrl-reset]"]}
+    ],
+    "design_issues": []
+  },
+  "testid_spec_mismatches": [
+    {"spec_expected": "settings-tier", "actual_in_code": "settings-subscription (section wrapper) — tier text rendered inside; no dedicated settings-tier testid"},
+    {"spec_expected": "affiliate-waitlist-btn", "actual_in_code": "affiliate-waitlist"},
+    {"spec_expected": "recipe-star-* / recipe-*", "actual_in_code": "save-toggle-{slug} for star, recipe-{slug} for recipe card"},
+    {"spec_expected": "day-row-*", "actual_in_code": "mealplan-{Mon|Tue|...|Sun}"},
+    {"spec_expected": "/collections/toasted-cheese-map", "actual_in_code": "no such slug — actual slugs: moving-out, budget, air-fryer, study-snacks, late-night, etc. ('toasted-cheese-map' appears to be the domain only). Test used /collections/moving-out and PASS."},
+    {"spec_expected": "nav-sandbox", "actual_in_code": "nav-sim (still 5 items: nav-home, nav-collections, nav-recipes, nav-sim, nav-settings)"}
+  ],
+  "test_report_links": [
+    "/app/backend/tests/test_premium_api.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "verified_frontend_flows": [
+    "/premium loads with paywall-page, plan-monthly, plan-lifetime, 6/6 perks, parent-psych-section, 6 collection-peek cards",
+    "Click plan-monthly → paywall-checkout-btn → window navigates to checkout.stripe.com (real Stripe test-mode session created)",
+    "/collections shows 10 collection-card-* cards",
+    "/collections/moving-out renders collection-recipes section with 3 recipe-* cards; PremiumGate UNLOCKED on trial (no premium-gate-lock); save-toggle-* writes to localStorage cot.saved.v1",
+    "/saved shows saved-empty initially, then saved-list with 1 item after starring",
+    "/settings: 4 theme-* buttons, referral-link-input contains '?via=' with device id, opt-push + opt-email present, affiliate-waitlist present; subscription text 'Trial active · Trial ends in 3 days · Renews 5/29/2026'",
+    "/meal-plan renders 7 mealplan-{day} rows, mealplan-save persists to localStorage cot.mealplan.v1",
+    "/grocery-list shows 6 default items in 3 aisles; grocery-add appends new item (6→7); grocery-share button present",
+    "Header pill 'TRIAL · 3D' via [data-testid=header-premium-link]",
+    "Bottom nav has 5 items: nav-home, nav-collections, nav-recipes, nav-sim, nav-settings",
+    "Home shows premium-active-banner for trial user",
+    "/premium/success?session_id=xxx shows [data-testid=success-polling] spinner",
+    "No horizontal overflow on /premium, /collections, /collections/moving-out, /settings, /meal-plan, /grocery-list at 414x896 (scrollWidth == clientWidth == 414)"
+  ],
+  "verified_backend_apis": [
+    "GET /api/ returns {status: ok, service: cheese-on-toast}",
+    "POST /api/users/init creates user, returns premium.tier='trial' with trial_ends_at and premium_until ~3 days out",
+    "POST /api/users/init is idempotent on same device_id (trial not regranted)",
+    "GET /api/users/{device_id}/premium returns 200 / 404 for unknown",
+    "POST /api/checkout/session monthly: returns checkout.stripe.com URL + session_id; payment_transactions has pending record amount=3.99 granted=False payment_status=initiated",
+    "POST /api/checkout/session lifetime: amount=24.99 in transaction record",
+    "POST /api/checkout/session invalid package → 400",
+    "GET /api/checkout/status/{session_id} fresh → payment_status != 'paid', granted=False",
+    "POST /api/analytics/event stores in analytics_events collection",
+    "GET /api/affiliate/preview returns rev_share_percent=30, cookie_window_days=30, waitlist_open=true",
+    "Referrer flow: POST /api/users/init with referrer_device_id creates row in referrals collection (rewarded=False)"
+  ],
+  "action_items": [
+    "Investigate cheese sim regression: ctrl-take-out on /simulator appears to navigate to /recipes instead of showing the outcome state. Manual check needed — could be a routing/state side-effect from PremiumProvider or Layout changes.",
+    "Optional: add dedicated [data-testid=settings-tier] inside settings-subscription so QA can read tier directly.",
+    "Optional: rename [data-testid=affiliate-waitlist] → [data-testid=affiliate-waitlist-btn] to match spec, or update spec.",
+    "Optional: clarify in spec that the cheese collection slug is e.g. 'moving-out' (not 'toasted-cheese-map' which is the domain name)."
+  ],
+  "critical_code_review_comments": [
+    "server.py is 438 lines — comfortably under the 700-line threshold. Clean module layout (models, helpers, routes).",
+    "Idempotency on /users/init relies on existing user lookup before insert; safe.",
+    "/checkout/status correctly guards granting via txn.granted flag (idempotent webhook + redirect).",
+    "Webhook handler swallows parse errors and still returns 200 — could mask bad signatures; consider logging at error level and returning 4xx for non-Stripe traffic.",
+    "Mongo _id is excluded with projection {'_id': 0} on user reads — good.",
+    "STRIPE_API_KEY missing returns 500 — acceptable but a startup-time check would fail-fast more clearly.",
+    "Compute-premium decides 'trial' vs 'monthly' tier by comparing premium_until <= trial_end. If a paid user is granted on top of trial, premium_until extends beyond trial_end so tier flips to 'monthly' — correct."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_premium_api.py (new)"
+  ],
+  "success_rate": {"backend": "100% (12/12)", "frontend": "95% — all premium flows verified; sim outcome regression unverified"},
+  "test_credentials": "n/a — anonymous device-id identity, no auth",
+  "seed_data_creation": "TEST-prefixed users/transactions/analytics_events/referrals created and cleaned up by teardown_module in test_premium_api.py",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend Stripe test-mode is fully wired and 100% passing. Frontend premium flows all green. The only flagged issue is the cheese sim outcome screen not rendering in the playwright run — main agent should manually confirm whether /simulator → grill → take-out still displays the outcome card with ctrl-share + ctrl-reset, OR if a recent change accidentally short-circuits to /recipes. Backend test file (/app/backend/tests/test_premium_api.py) is reusable for regression in future iterations.",
+  "rca_of_the_issue": "Cheese sim: after ctrl-take-out the URL changes to /recipes (visible because bottom nav 'RECIPES' becomes highlighted in screenshot, and outcome+share+reset testids are absent). Hypothesis: either finish(simSec) navigates programmatically on certain timer values, OR a side-effect from the PremiumProvider's focus/visibility listener triggers a route change while Stripe.js (loaded earlier in test sequence) is in the background. Reproduced twice in this session. Needs main agent investigation; could not be reproduced in iter 1-4 because PremiumProvider didn't exist."
+}

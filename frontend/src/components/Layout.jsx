@@ -1,8 +1,11 @@
 import { Link, useLocation } from "react-router-dom";
-import { Flame, Home, BookOpen, Cpu } from "lucide-react";
+import { Flame, Home, BookOpen, Cpu, Crown, Settings as SettingsIcon } from "lucide-react";
+import { usePremium } from "../context/PremiumContext";
 
 export const Layout = ({ children }) => {
   const loc = useLocation();
+  const { isPremium, isTrial, isLifetime, trialDaysLeft } = usePremium();
+
   const navItem = (to, label, icon, tid) => {
     const active = loc.pathname === to || (to !== "/" && loc.pathname.startsWith(to));
     return (
@@ -32,20 +35,30 @@ export const Layout = ({ children }) => {
             </span>
           </Link>
           <div className="flex items-center gap-2">
-          <Link
-            to="/achievements"
-            data-testid="header-trophy-link"
-            className="text-[10px] sm:text-xs font-mono uppercase tracking-widest px-2 py-1 border-2 border-white/60 text-foreground hover:border-brand-primary hover:text-brand-primary transition-colors"
-          >
-            Trophies
-          </Link>
-          <Link
-            to="/simulator"
-            data-testid="header-sim-link"
-            className="text-[10px] sm:text-xs font-mono uppercase tracking-widest px-2 py-1 border-2 border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-ink transition-colors"
-          >
-            Sandbox
-          </Link>
+            {isPremium ? (
+              <Link
+                to="/settings"
+                data-testid="header-premium-link"
+                className="text-[10px] sm:text-xs font-mono uppercase tracking-widest px-2 py-1 border-2 border-brand-primary text-brand-primary inline-flex items-center gap-1"
+              >
+                <Crown size={12} /> {isLifetime ? "Lifetime" : isTrial ? `Trial · ${trialDaysLeft ?? "—"}d` : "Premium"}
+              </Link>
+            ) : (
+              <Link
+                to="/premium"
+                data-testid="header-upgrade-link"
+                className="text-[10px] sm:text-xs font-mono uppercase tracking-widest px-2 py-1 bg-brand-primary text-ink border-2 border-brand-primary"
+              >
+                Upgrade
+              </Link>
+            )}
+            <Link
+              to="/achievements"
+              data-testid="header-trophy-link"
+              className="hidden sm:inline-flex text-[10px] sm:text-xs font-mono uppercase tracking-widest px-2 py-1 border-2 border-white/60 text-foreground hover:border-brand-primary hover:text-brand-primary transition-colors"
+            >
+              Trophies
+            </Link>
           </div>
         </div>
       </header>
@@ -59,8 +72,10 @@ export const Layout = ({ children }) => {
       >
         <div className="max-w-3xl mx-auto flex">
           {navItem("/", "Home", <Home size={20} />, "nav-home")}
+          {navItem("/collections", "Premium", <Crown size={20} />, "nav-collections")}
           {navItem("/recipes", "Recipes", <BookOpen size={20} />, "nav-recipes")}
           {navItem("/simulator", "Sandbox", <Cpu size={20} />, "nav-sim")}
+          {navItem("/settings", "Settings", <SettingsIcon size={20} />, "nav-settings")}
         </div>
       </nav>
     </div>
