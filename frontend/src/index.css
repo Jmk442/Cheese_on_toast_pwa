@@ -43,6 +43,18 @@ body {
   --cot-primary-hover: #A3E635;
   --cot-primary-ink: #09090B;
 }
+[data-cot-theme="inferno"] {
+  --cot-primary: #EF4444;
+  --cot-primary-rgb: 239 68 68;
+  --cot-primary-hover: #F87171;
+  --cot-primary-ink: #FFFFFF;
+}
+[data-cot-theme="arcade"] {
+  --cot-primary: #06B6D4;
+  --cot-primary-rgb: 6 182 212;
+  --cot-primary-hover: #22D3EE;
+  --cot-primary-ink: #09090B;
+}
 
 ::selection {
   background: var(--cot-primary);

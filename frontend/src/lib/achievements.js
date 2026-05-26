@@ -2,18 +2,30 @@
 //
 // Stats shape:
 // {
-//   cheese: { plays, perfects, fires, nukes, hardPerfects },
-//   rice:   { plays, perfects, scorches, disasters, hardPerfects },
-//   pan:    { plays, perfects, burns, scorches, hardPerfects },
+//   cheese: { plays, perfects, fires, nukes, hardPerfects, currentStreak, bestStreak },
+//   rice:   { plays, perfects, scorches, disasters, hardPerfects, currentStreak, bestStreak },
+//   pan:    { plays, perfects, burns, scorches, hardPerfects, currentStreak, bestStreak },
 //   unlocked: [ "first-toast", ... ]
 // }
+//
+// "Streak" = consecutive PERFECT outcomes in the same simulator. Any other
+// outcome (including a reset before finishing) resets currentStreak to 0.
+// bestStreak only goes up.
 
 const STORAGE_KEY = "cot.stats.v1";
 
+const EMPTY_SIM = () => ({
+  plays: 0,
+  perfects: 0,
+  hardPerfects: 0,
+  currentStreak: 0,
+  bestStreak: 0,
+});
+
 const EMPTY = () => ({
-  cheese: { plays: 0, perfects: 0, fires: 0, nukes: 0, hardPerfects: 0 },
-  rice:   { plays: 0, perfects: 0, scorches: 0, disasters: 0, hardPerfects: 0 },
-  pan:    { plays: 0, perfects: 0, burns: 0, scorches: 0, hardPerfects: 0 },
+  cheese: { ...EMPTY_SIM(), fires: 0, nukes: 0 },
+  rice:   { ...EMPTY_SIM(), scorches: 0, disasters: 0 },
+  pan:    { ...EMPTY_SIM(), burns: 0, scorches: 0 },
   unlocked: [],
 });
 
@@ -74,6 +86,28 @@ export const BADGES = [
     icon: "Swords",
     check: (s) => (s.cheese.hardPerfects + s.rice.hardPerfects + s.pan.hardPerfects) >= 3,
   },
+  // ---- Streak badges (any sim) ----
+  {
+    id: "streak-3",
+    name: "Hot Streak",
+    description: "Three perfect runs in a row in any single sim.",
+    icon: "Zap",
+    check: (s) => Math.max(s.cheese.bestStreak || 0, s.rice.bestStreak || 0, s.pan.bestStreak || 0) >= 3,
+  },
+  {
+    id: "streak-5",
+    name: "On Fire",
+    description: "Five perfect runs in a row in any single sim.",
+    icon: "Flame",
+    check: (s) => Math.max(s.cheese.bestStreak || 0, s.rice.bestStreak || 0, s.pan.bestStreak || 0) >= 5,
+  },
+  {
+    id: "streak-10",
+    name: "Unbreakable",
+    description: "Ten perfect runs in a row in any single sim. Unhinged behaviour.",
+    icon: "Sparkles",
+    check: (s) => Math.max(s.cheese.bestStreak || 0, s.rice.bestStreak || 0, s.pan.bestStreak || 0) >= 10,
+  },
 ];
 
 export const getStats = () => {
@@ -103,17 +137,28 @@ const saveStats = (s) => {
  * @param {"cheese"|"rice"|"pan"} sim
  * @param {string} outcomeKey  e.g. "perfect", "fire", "nuclear", "scorched", "burnt", "disaster"
  * @param {"EASY"|"NORMAL"|"HARD"} difficulty
- * @returns {Array} newly unlocked badge ids
+ * @returns {{unlocked: string[], streak: number, best: number}}
+ *   unlocked = newly unlocked badge ids this run
+ *   streak   = currentStreak after this run (for the given sim)
+ *   best     = bestStreak after this run (for the given sim)
  */
 export const recordOutcome = (sim, outcomeKey, difficulty = "NORMAL") => {
   const s = getStats();
-  if (!s[sim]) return [];
+  if (!s[sim]) return { unlocked: [], streak: 0, best: 0 };
   s[sim].plays += 1;
 
   if (outcomeKey === "perfect") {
     s[sim].perfects += 1;
     if (difficulty === "HARD") s[sim].hardPerfects += 1;
+    s[sim].currentStreak = (s[sim].currentStreak || 0) + 1;
+    if (s[sim].currentStreak > (s[sim].bestStreak || 0)) {
+      s[sim].bestStreak = s[sim].currentStreak;
+    }
+  } else {
+    // Any non-perfect outcome breaks the streak.
+    s[sim].currentStreak = 0;
   }
+
   if (sim === "cheese") {
     if (outcomeKey === "fire") s.cheese.fires += 1;
     if (outcomeKey === "nuclear") s.cheese.nukes += 1;
@@ -136,7 +181,11 @@ export const recordOutcome = (sim, outcomeKey, difficulty = "NORMAL") => {
     }
   }
   saveStats(s);
-  return newlyUnlocked;
+  return {
+    unlocked: newlyUnlocked,
+    streak: s[sim].currentStreak,
+    best: s[sim].bestStreak,
+  };
 };
 
 export const resetStats = () => {
@@ -146,4 +195,10 @@ export const resetStats = () => {
 export const getUnlockedBadges = () => {
   const s = getStats();
   return BADGES.filter((b) => s.unlocked.includes(b.id));
+};
+
+/** Read-only helper for displaying streaks in HUDs without recording an outcome. */
+export const getCurrentStreak = (sim) => {
+  const s = getStats();
+  return s[sim]?.currentStreak || 0;
 };

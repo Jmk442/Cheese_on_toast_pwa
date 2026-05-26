@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Play, RotateCcw, Volume2, VolumeX } from "lucide-react";
+import { ArrowLeft, Play, RotateCcw, Volume2, VolumeX, Flame } from "lucide-react";
 import { SeoHead } from "../components/SeoHead";
 import { DifficultyPicker } from "../components/DifficultyPicker";
 import { AchievementBanner } from "../components/AchievementBanner";
-import { recordOutcome, BADGES } from "../lib/achievements";
+import { recordOutcome, getStats, BADGES } from "../lib/achievements";
 import { ShareButton } from "../components/ShareButton";
 
 /**
@@ -57,6 +57,8 @@ export default function SaucepanSimulator() {
   const [muted, setMuted] = useState(false);
   const [difficulty, setDifficulty] = useState("NORMAL");
   const [newBadges, setNewBadges] = useState([]);
+  const [streak, setStreak] = useState(() => getStats().pan.currentStreak || 0);
+  const [bestStreak, setBestStreak] = useState(() => getStats().pan.bestStreak || 0);
 
   const diffRate = difficulty === "HARD" ? 1.4 : difficulty === "EASY" ? 0.75 : 1.0;
 
@@ -135,7 +137,9 @@ export default function SaucepanSimulator() {
     clearInterval(intRef.current);
     setOutcome(result);
     if (!muted) beep(audioRef, key === "perfect" ? 1200 : 220, 0.4);
-    const unlocked = recordOutcome("pan", key, difficulty);
+    const { unlocked, streak: newStreak, best } = recordOutcome("pan", key, difficulty);
+    setStreak(newStreak);
+    setBestStreak(best);
     if (unlocked.length > 0) {
       setNewBadges(BADGES.filter((b) => unlocked.includes(b.id)));
     }
@@ -191,9 +195,18 @@ export default function SaucepanSimulator() {
         <Link to="/recipe/saucepan-heating" data-testid="back-link" className="inline-flex items-center gap-1 text-[11px] font-mono uppercase tracking-widest text-foreground/60 hover:text-brand-primary">
           <ArrowLeft size={14} /> Recipe
         </Link>
-        <button type="button" data-testid="mute-toggle" onClick={() => setMuted((m) => !m)} className="inline-flex items-center gap-1 text-[11px] font-mono uppercase tracking-widest text-foreground/60 hover:text-brand-primary">
-          {muted ? <VolumeX size={14} /> : <Volume2 size={14} />} {muted ? "Muted" : "Sound on"}
-        </button>
+        <div className="flex items-center gap-3">
+          <span
+            data-testid="streak-indicator"
+            className={`inline-flex items-center gap-1 text-[11px] font-mono uppercase tracking-widest ${streak >= 3 ? "text-brand-danger" : streak > 0 ? "text-brand-perfect" : "text-foreground/40"}`}
+            title={`Best streak: ${bestStreak}`}
+          >
+            <Flame size={12} /> Streak <span data-testid="streak-value" className="timer-digit">{streak}</span>
+          </span>
+          <button type="button" data-testid="mute-toggle" onClick={() => setMuted((m) => !m)} className="inline-flex items-center gap-1 text-[11px] font-mono uppercase tracking-widest text-foreground/60 hover:text-brand-primary">
+            {muted ? <VolumeX size={14} /> : <Volume2 size={14} />} {muted ? "Muted" : "Sound on"}
+          </button>
+        </div>
       </div>
 
       <header className="space-y-2">

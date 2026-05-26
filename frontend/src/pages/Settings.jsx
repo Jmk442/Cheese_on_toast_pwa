@@ -1,32 +1,34 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Crown, Palette, Handshake, Bell, BarChart3, Mail, Shield, ArrowRight, RotateCcw } from "lucide-react";
+import { Crown, Palette, Handshake, Bell, BarChart3, Mail, Shield, ArrowRight, RotateCcw, Lock } from "lucide-react";
 import { SeoHead } from "../components/SeoHead";
 import { usePremium } from "../context/PremiumContext";
 import { getAffiliatePreview } from "../lib/api";
 import { track } from "../lib/analytics";
 import { AccountLinkCard } from "../components/AccountLinkCard";
-
-const THEMES = [
-  { id: "yellow", label: "Classic Yellow", swatch: "#FACC15", free: true },
-  { id: "neon",   label: "Neon Pink",      swatch: "#EC4899", free: false },
-  { id: "mint",   label: "Mint Calm",      swatch: "#10B981", free: false },
-  { id: "slime",  label: "Toxic Slime",    swatch: "#84CC16", free: false },
-];
+import { THEMES, isThemeUnlocked } from "../lib/themes";
+import { getStats } from "../lib/achievements";
 
 export default function Settings() {
   const { deviceId, premium, isPremium, isLifetime, isTrial, trialDaysLeft, cosmetic, setCosmetic } = usePremium();
   const [affiliate, setAffiliate] = useState(null);
   const [emailOptIn, setEmailOptIn] = useState(false);
   const [pushOptIn, setPushOptIn] = useState(false);
+  const [unlockedBadgeIds, setUnlockedBadgeIds] = useState([]);
 
   useEffect(() => {
     getAffiliatePreview().then(setAffiliate).catch(() => null);
+    setUnlockedBadgeIds(getStats().unlocked || []);
+    // Refresh badge list when window regains focus (after finishing a sim)
+    const onFocus = () => setUnlockedBadgeIds(getStats().unlocked || []);
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
   }, []);
 
   const handleTheme = (t) => {
-    if (!t.free && !isPremium) return;
+    if (!isThemeUnlocked(t, { isPremium, unlockedBadgeIds })) return;
     setCosmetic(t.id);
+    track("theme_selected", { id: t.id });
   };
 
   const referralLink = `${typeof window !== "undefined" ? window.location.origin : ""}/?via=${deviceId || ""}`;
@@ -81,31 +83,51 @@ export default function Settings() {
       {/* Cosmetics */}
       <section data-testid="settings-cosmetics" className="space-y-3">
         <h2 className="font-display font-black uppercase tracking-tight text-xl inline-flex items-center gap-2"><Palette size={18} /> Kitchen Theme</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <p className="font-mono text-[11px] text-foreground/60">Earn themes by completing achievements. Premium unlocks them all instantly.</p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {THEMES.map((t) => {
-            const locked = !t.free && !isPremium;
+            const unlocked = isThemeUnlocked(t, { isPremium, unlockedBadgeIds });
             const active = cosmetic === t.id;
+            const isFree = t.unlock?.type === "free";
+            const earnedViaBadge = !isFree && t.unlock?.type === "badge" && unlockedBadgeIds.includes(t.unlock.badge);
+            let statusLabel;
+            if (isFree) statusLabel = "Free";
+            else if (earnedViaBadge) statusLabel = "Earned";
+            else if (unlocked) statusLabel = "Premium";
+            else statusLabel = "Locked";
             return (
               <button
                 key={t.id}
                 type="button"
                 data-testid={`theme-${t.id}`}
                 onClick={() => handleTheme(t)}
-                disabled={locked}
+                disabled={!unlocked}
+                title={!unlocked && t.unlock?.hint ? t.unlock.hint : undefined}
                 className={`p-3 border-2 space-y-2 text-left transition-colors ${
                   active ? "border-brand-primary bg-ink" : "border-white/30 hover:border-white"
-                } ${locked ? "opacity-60 cursor-not-allowed" : ""}`}
+                } ${!unlocked ? "opacity-60 cursor-not-allowed" : ""}`}
               >
-                <div className="w-full h-8 border-2 border-ink" style={{ background: t.swatch }} />
-                <div className="font-mono text-xs uppercase tracking-widest">{t.label}</div>
-                <div className="font-mono text-[10px] uppercase tracking-widest text-foreground/40">
-                  {t.free ? "Free" : locked ? "Premium" : "Unlocked"}
+                <div className="w-full h-8 border-2 border-ink relative" style={{ background: t.swatch }}>
+                  {!unlocked && (
+                    <span className="absolute inset-0 flex items-center justify-center bg-ink/70">
+                      <Lock size={12} className="text-white" />
+                    </span>
+                  )}
                 </div>
+                <div className="font-mono text-xs uppercase tracking-widest">{t.label}</div>
+                <div className={`font-mono text-[10px] uppercase tracking-widest ${earnedViaBadge ? "text-brand-perfect" : "text-foreground/40"}`}>
+                  {statusLabel}
+                </div>
+                {!unlocked && t.unlock?.hint && (
+                  <div className="font-mono text-[10px] text-foreground/50 leading-tight" data-testid={`theme-hint-${t.id}`}>
+                    {t.unlock.hint}
+                  </div>
+                )}
               </button>
             );
           })}
         </div>
-        <p className="font-mono text-[10px] uppercase tracking-widest text-foreground/40">More cosmetics & kitchen avatars coming soon.</p>
+        <p className="font-mono text-[10px] uppercase tracking-widest text-foreground/40">Play the sandboxes to unlock more.</p>
       </section>
 
       {/* Referral */}

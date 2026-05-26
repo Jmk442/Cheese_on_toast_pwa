@@ -1,12 +1,12 @@
 import { Link } from "react-router-dom";
-import { ArrowLeft, Trophy, Crown, ChefHat, Award, UtensilsCrossed, Flame, Gamepad2, Swords, Lock, RotateCcw, Backpack, Wallet, Wind, CalendarDays, ShoppingCart, Leaf, Sparkles } from "lucide-react";
+import { ArrowLeft, Trophy, Crown, ChefHat, Award, UtensilsCrossed, Flame, Gamepad2, Swords, Lock, RotateCcw, Backpack, Wallet, Wind, CalendarDays, ShoppingCart, Leaf, Sparkles, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
 import { BADGES, getStats, resetStats } from "../lib/achievements";
 import { PREMIUM_BADGES } from "../data/collections";
 import { usePremium } from "../context/PremiumContext";
 import { SeoHead } from "../components/SeoHead";
 
-const ICONS = { Trophy, Crown, ChefHat, Award, UtensilsCrossed, Flame, Gamepad2, Swords, Backpack, Wallet, Wind, CalendarDays, ShoppingCart, Leaf };
+const ICONS = { Trophy, Crown, ChefHat, Award, UtensilsCrossed, Flame, Gamepad2, Swords, Backpack, Wallet, Wind, CalendarDays, ShoppingCart, Leaf, Sparkles, Zap };
 
 export default function Achievements() {
   const [stats, setStats] = useState(getStats());
@@ -70,6 +70,38 @@ export default function Achievements() {
             <div className="text-[10px] font-mono uppercase tracking-widest text-foreground/40">perfects/plays</div>
           </div>
         ))}
+      </section>
+
+      {/* Streaks overview */}
+      <section data-testid="streaks-overview" className="brut-card p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="font-display font-black uppercase tracking-tight text-lg inline-flex items-center gap-2">
+            <Zap size={16} className="text-brand-primary" /> Perfect Streaks
+          </h2>
+          <span className="font-mono text-[10px] uppercase tracking-widest text-foreground/50">in a row</span>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { k: "cheese", label: "Cheese" },
+            { k: "rice",   label: "Rice" },
+            { k: "pan",    label: "Pan" },
+          ].map((row) => {
+            const cur = stats[row.k]?.currentStreak || 0;
+            const best = stats[row.k]?.bestStreak || 0;
+            const onFire = cur >= 3;
+            return (
+              <div key={row.k} data-testid={`streak-${row.k}`} className={`border-2 p-2 space-y-1 ${onFire ? "border-brand-danger" : "border-white/20"}`}>
+                <div className="text-[10px] font-mono uppercase tracking-widest text-foreground/50">{row.label}</div>
+                <div className={`font-display font-black text-xl timer-digit ${onFire ? "text-brand-danger" : "text-foreground"}`} data-testid={`streak-${row.k}-current`}>
+                  {cur}{onFire && <Flame size={14} className="inline ml-1 -mt-1 text-brand-danger" />}
+                </div>
+                <div className="text-[10px] font-mono uppercase tracking-widest text-foreground/40">
+                  best <span className="text-brand-primary" data-testid={`streak-${row.k}-best`}>{best}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </section>
 
       <div className="flex items-end justify-between">

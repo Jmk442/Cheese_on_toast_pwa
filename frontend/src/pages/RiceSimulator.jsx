@@ -4,7 +4,7 @@ import { ArrowLeft, Play, RotateCcw, Flame, Volume2, VolumeX } from "lucide-reac
 import { SeoHead } from "../components/SeoHead";
 import { DifficultyPicker } from "../components/DifficultyPicker";
 import { AchievementBanner } from "../components/AchievementBanner";
-import { recordOutcome, BADGES } from "../lib/achievements";
+import { recordOutcome, getStats, BADGES } from "../lib/achievements";
 import { ShareButton } from "../components/ShareButton";
 
 /**
@@ -56,6 +56,8 @@ export default function RiceSimulator() {
   const [muted, setMuted] = useState(false);
   const [difficulty, setDifficulty] = useState("NORMAL");
   const [newBadges, setNewBadges] = useState([]);
+  const [streak, setStreak] = useState(() => getStats().rice.currentStreak || 0);
+  const [bestStreak, setBestStreak] = useState(() => getStats().rice.bestStreak || 0);
 
   const diffRate = difficulty === "HARD" ? 1.4 : difficulty === "EASY" ? 0.75 : 1.0;
 
@@ -130,7 +132,9 @@ export default function RiceSimulator() {
     clearInterval(intRef.current);
     setOutcome(result);
     if (!muted) beep(audioRef, key === "perfect" ? 1200 : 220, 0.4);
-    const unlocked = recordOutcome("rice", key, difficulty);
+    const { unlocked, streak: newStreak, best } = recordOutcome("rice", key, difficulty);
+    setStreak(newStreak);
+    setBestStreak(best);
     if (unlocked.length > 0) {
       setNewBadges(BADGES.filter((b) => unlocked.includes(b.id)));
     }
@@ -201,14 +205,23 @@ export default function RiceSimulator() {
         <Link to="/recipe/boiled-rice" data-testid="back-link" className="inline-flex items-center gap-1 text-[11px] font-mono uppercase tracking-widest text-foreground/60 hover:text-brand-primary">
           <ArrowLeft size={14} /> Recipe
         </Link>
-        <button
-          type="button"
-          data-testid="mute-toggle"
-          onClick={() => setMuted((m) => !m)}
-          className="inline-flex items-center gap-1 text-[11px] font-mono uppercase tracking-widest text-foreground/60 hover:text-brand-primary"
-        >
-          {muted ? <VolumeX size={14} /> : <Volume2 size={14} />} {muted ? "Muted" : "Sound on"}
-        </button>
+        <div className="flex items-center gap-3">
+          <span
+            data-testid="streak-indicator"
+            className={`inline-flex items-center gap-1 text-[11px] font-mono uppercase tracking-widest ${streak >= 3 ? "text-brand-danger" : streak > 0 ? "text-brand-perfect" : "text-foreground/40"}`}
+            title={`Best streak: ${bestStreak}`}
+          >
+            <Flame size={12} /> Streak <span data-testid="streak-value" className="timer-digit">{streak}</span>
+          </span>
+          <button
+            type="button"
+            data-testid="mute-toggle"
+            onClick={() => setMuted((m) => !m)}
+            className="inline-flex items-center gap-1 text-[11px] font-mono uppercase tracking-widest text-foreground/60 hover:text-brand-primary"
+          >
+            {muted ? <VolumeX size={14} /> : <Volume2 size={14} />} {muted ? "Muted" : "Sound on"}
+          </button>
+        </div>
       </div>
 
       <header className="space-y-2">

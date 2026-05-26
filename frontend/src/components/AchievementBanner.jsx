@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { Trophy, Crown, ChefHat, Award, UtensilsCrossed, Flame, Gamepad2, Swords, Zap } from "lucide-react";
+import { Trophy, Crown, ChefHat, Award, UtensilsCrossed, Flame, Gamepad2, Swords, Zap, Sparkles } from "lucide-react";
 
-const ICONS = { Trophy, Crown, ChefHat, Award, UtensilsCrossed, Flame, Gamepad2, Swords };
+const ICONS = { Trophy, Crown, ChefHat, Award, UtensilsCrossed, Flame, Gamepad2, Swords, Zap, Sparkles };
 
 /**
  * Small overlay toast shown when one or more badges unlock at the end of a sim run.
