@@ -18,19 +18,22 @@
 
 ## What's Been Implemented (2026-02)
 - **Frontend SPA** (React 19 + Tailwind + react-router 7) — no backend changes; recipes are static
-- Pages: `/` Home, `/recipes` list, `/recipe/:slug` detail (5 recipes), `/simulator` flagship sandbox
-- **Sandbox state machine** (Simulator.jsx): 6 stages — empty → bread inserted → toasting (auto 4s) → toast out → cheese applied → live grill timer with 8 phases (COLD/MELTING/LOOKING GOOD/ABOUT READY/TAKE IT OUT/GETTING DARK/FIRE/NUCLEAR) → outcome panel (raw/pale/perfect/dark/fire/nuclear) with reset
-- **CSS-illustrated toaster, bread, cheese** (shapes + states), grill bar overlay, animated flames + smoke, shake/blink/scan-line keyframes
-- **Audio cues** (Web Audio API beeps) at 30-sim-sec intervals + result, with mute toggle
-- **SEO**: static index.html with Recipe JSON-LD for flagship; dynamic SeoHead.jsx injects per-page title/description/canonical/JSON-LD; sitemap.xml + robots.txt
+- Pages: `/` Home, `/recipes` list, `/recipe/:slug` detail (5 recipes), `/simulator` flagship cheese-on-toast sandbox, `/simulator/boiled-rice` rice boil-dry meter, `/simulator/saucepan-heating` saucepan stir meter
+- **Cheese-on-toast sandbox**: 6 stages, 8 timer phases, accelerated time, outcome panel
+- **Rice sandbox (NEW)**: water-level gauge + heat dial (OFF/LOW/HIGH). Boil-window detection — if user leaves it on HIGH past boil → BOILED OVER. Outcomes: PERFECT / ALMOST / UNDERCOOKED / BURNT BOTTOM / PAN DESTROYED
+- **Saucepan sandbox (NEW)**: stick-meter (rises with heat, resets on STIR) + temperature gauge with 80% sweet-zone marker. Outcomes: PERFECTLY HEATED / LUKEWARM / STILL COLD / STUCK BOTTOM / BURNT / SCORCHED
+- Each recipe with `simulatorPath` shows "Practice in the Sandbox" CTA on its detail page
+- CSS-illustrated toaster, saucepan, animated flames, smoke, shake/blink/scan-line keyframes
+- Audio cues (Web Audio API beeps) with mute toggle
+- **SEO**: static index.html with Recipe JSON-LD for flagship; dynamic SeoHead.jsx per-page; sitemap.xml lists 3 simulators; robots.txt
 - **PWA**: manifest.json, apple-mobile-web-app meta, theme-color #09090B
-- Tested end-to-end via testing agent — 14/14 assertions pass
+- Tested via testing agent: iter 1 (14/14 pass) + iter 2 (12/12 pass on new sims + regression)
 
 ## Backlog (Future)
 **P1 — High value enhancements**
-- Per-recipe simulators (rice boil-dry meter, saucepan-heat meter)
-- "Cooked it!" share button with OG image (shareability → traffic loop)
+- "Cooked it!" share button with auto-generated OG image (shareability → traffic loop)
 - Voice narration of steps (hands-free while cooking)
+- Difficulty levels for sims (easy / normal / "no second chances")
 
 **P2**
 - More recipes (scrambled eggs, pasta, baked beans)
