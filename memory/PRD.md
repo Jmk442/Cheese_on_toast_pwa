@@ -29,27 +29,35 @@ A mobile-first teen cooking guide centred on "how to make cheese on toast" with 
 
 ### Premium tier
 - **Backend (FastAPI + MongoDB + Stripe test-mode AUD)**:
-  - `/api/users/init`, `/premium`, `/checkout/session`, `/checkout/status/{sid}`, `/webhook/stripe`, `/analytics/event`, `/affiliate/preview`
-  - Collections: `users`, `payment_transactions`, `analytics_events`, `referrals`
-- **Frontend premium architecture**:
-  - `PremiumProvider` context, `PremiumGate`, `PaywallTrigger` (3 strategies)
-  - `Paywall`, `PaywallSuccess`, 10 collection pages, `MealPlan`, `GroceryList`, `SavedRecipes`, `Settings`
-  - Header trial pill / Upgrade pill, 5-tab bottom nav, Home premium banner
-- **Cosmetic themes (live, NEW)**: Yellow (free), Neon Pink, Mint Calm, Toxic Slime — all premium. Switching the theme in Settings rewrites a CSS custom property `--cot-primary` via `data-cot-theme` on `<html>`, re-skinning every brand surface (buttons, cards, label tags, shadows, header pill, paywall) across the entire app instantly and persistently.
-- **All pricing in AUD** — A$3.99/mo, A$24.99 lifetime
+  - Free 3-day trial auto-granted on first init
+  - Stripe Checkout: A$3.99/30days (monthly) + A$24.99/forever (lifetime)
+  - Anonymous device-id identity primary; **email magic-link auth** as optional sync layer (`/api/auth/magic-link/request`, `/verify`, `/account/me`, `/account/unlink`)
+  - When a device links to an email account, premium is resolved from the account so it transfers across all linked devices
+  - Stripe purchases by a linked device grant to the **account**, benefitting every device on it
+  - Dev-mode magic-link fallback (`dev_link` in response) active when `RESEND_API_KEY` is not configured — MUST be set before public deploy
+  - Collections: `users`, `accounts`, `magic_links`, `payment_transactions`, `analytics_events`, `referrals`
+- **Frontend premium architecture**: `PremiumProvider`, `PremiumGate`, `PaywallTrigger` (3 strategies), `Paywall`, `PaywallSuccess`, 10 collection pages, `MealPlan`, `GroceryList`, `SavedRecipes`, `Settings`, `AuthVerify`, `AccountLinkCard`
+- **Cosmetic themes** (Yellow free, Neon/Mint/Slime premium) — instantly re-skin every brand surface via `data-cot-theme` + CSS custom properties
+- **All pricing in AUD**
 - **Tested**: iter 1 (14/14), iter 2 (12/12), iter 3 (47/48), iter 4 (12/12), iter 5 (backend 12/12, frontend 95%), iter 6 (backend 12/12, frontend ✓, UX bug found & fixed)
 
 ### Recent fix
 - Mobile bottom-nav was overlapping stage-5 sim button — `Layout.jsx pb-28 → pb-36`. Verified click now lands correctly, outcome renders, URL stays /simulator.
 
 ## Backlog (Future)
+**P0 — Pre-public-deploy hardening (must do before exposing to real users)**
+- Set `RESEND_API_KEY` env var to disable the dev-mode magic-link response (currently anyone can request a token for any email and read it back via the API). Optionally gate behind an explicit `ALLOW_DEV_MAGIC_LINK=1` flag.
+- Add unique MongoDB indexes: `magic_links.token`, `accounts.email`. TTL index on `magic_links.expires_at`.
+- Add rate-limiting on `/api/auth/magic-link/request` (per-device + per-email throttle)
+- Split server.py into modular files (auth.py, payments.py, analytics.py) once it crosses ~800 lines
+
 **P1 — High value**
-- Voice narration of recipe steps
+- Real push notifications (Web Push + VAPID + service worker) + email newsletter (Resend / Mailchimp)
 - Streak counter (perfect-runs-in-a-row)
-- Real push notifications (Web Push + VAPID + service worker)
-- Email signup + magic-link upgrade so premium transfers across devices
 - Affiliate program launch (currently placeholder)
 - Family Plan tier (A$49.99/year covers 4 device-ids)
+- Wire `PREMIUM_BADGES` into `/achievements`
+- "Theme unlock as reward" loop (Mint after 5 perfect rice; Slime after Iron Chef; Neon Pink as referral reward)
 
 **P2**
 - Avatar / kitchen scene customisation (currently theme only)
