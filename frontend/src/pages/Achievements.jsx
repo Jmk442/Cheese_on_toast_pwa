@@ -1,14 +1,17 @@
 import { Link } from "react-router-dom";
-import { ArrowLeft, Trophy, Crown, ChefHat, Award, UtensilsCrossed, Flame, Gamepad2, Swords, Lock, RotateCcw } from "lucide-react";
+import { ArrowLeft, Trophy, Crown, ChefHat, Award, UtensilsCrossed, Flame, Gamepad2, Swords, Lock, RotateCcw, Backpack, Wallet, Wind, CalendarDays, ShoppingCart, Leaf, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { BADGES, getStats, resetStats } from "../lib/achievements";
+import { PREMIUM_BADGES } from "../data/collections";
+import { usePremium } from "../context/PremiumContext";
 import { SeoHead } from "../components/SeoHead";
 
-const ICONS = { Trophy, Crown, ChefHat, Award, UtensilsCrossed, Flame, Gamepad2, Swords };
+const ICONS = { Trophy, Crown, ChefHat, Award, UtensilsCrossed, Flame, Gamepad2, Swords, Backpack, Wallet, Wind, CalendarDays, ShoppingCart, Leaf };
 
 export default function Achievements() {
   const [stats, setStats] = useState(getStats());
   const [confirming, setConfirming] = useState(false);
+  const { isPremium } = usePremium();
 
   const refresh = () => setStats(getStats());
 
@@ -112,6 +115,47 @@ export default function Achievements() {
             </div>
           );
         })}
+      </section>
+
+      {/* Premium badges — locked unless premium */}
+      <section data-testid="premium-badges-section" className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="font-display font-black uppercase tracking-tight text-xl inline-flex items-center gap-2"><Sparkles size={18} className="text-brand-primary" /> Premium Badges</h2>
+          {!isPremium && (
+            <Link to="/premium" data-testid="premium-badges-upsell" className="text-[10px] font-mono uppercase tracking-widest px-2 py-1 border-2 border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-ink">
+              Unlock
+            </Link>
+          )}
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3" data-testid="premium-badge-grid">
+          {PREMIUM_BADGES.map((b) => {
+            const Icon = ICONS[b.icon] || Trophy;
+            return (
+              <div
+                key={b.id}
+                data-testid={`premium-badge-${b.id}`}
+                className={`p-4 border-2 space-y-2 ${
+                  isPremium ? "border-brand-primary/60 bg-ink" : "border-white/15 bg-ink/40 opacity-60"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span className={`inline-flex w-10 h-10 items-center justify-center border-2 ${
+                    isPremium ? "bg-brand-primary/20 text-brand-primary border-brand-primary/60" : "bg-ink text-foreground/30 border-white/20"
+                  }`}>
+                    {isPremium ? <Icon size={18} strokeWidth={2.5} /> : <Lock size={16} />}
+                  </span>
+                  <span className={`font-display font-black uppercase text-sm leading-tight ${isPremium ? "" : "text-foreground/50"}`}>{b.name}</span>
+                </div>
+                <p className={`font-mono text-xs ${isPremium ? "text-foreground/80" : "text-foreground/40"}`}>{b.description}</p>
+              </div>
+            );
+          })}
+        </div>
+        {!isPremium && (
+          <p className="font-mono text-[10px] uppercase tracking-widest text-foreground/40">
+            Start your 3-day free trial to unlock the premium badge track.
+          </p>
+        )}
       </section>
 
       <div className="brut-card p-5 space-y-3" data-testid="sandboxes-cta">

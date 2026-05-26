@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Check, Crown, Loader2 } from "lucide-react";
+import { Check, Crown, Loader2, Mail } from "lucide-react";
 import { usePremium } from "../context/PremiumContext";
 import { SeoHead } from "../components/SeoHead";
+import { AccountLinkCard } from "../components/AccountLinkCard";
+import { getAccountMe } from "../lib/api";
+import { getDeviceId } from "../lib/device";
 import { track } from "../lib/analytics";
 
 export default function PaywallSuccess() {
@@ -11,6 +14,7 @@ export default function PaywallSuccess() {
   const { pollCheckout, refreshPremium, premium } = usePremium();
   const [state, setState] = useState("polling"); // polling | success | timeout
   const [pkg, setPkg] = useState(null);
+  const [linked, setLinked] = useState(null);
 
   useEffect(() => {
     if (!sessionId) {
@@ -24,6 +28,12 @@ export default function PaywallSuccess() {
       () => { setState("timeout"); }
     );
   }, [sessionId, pollCheckout, refreshPremium]);
+
+  // After success — check link status so we can show or hide the link CTA
+  useEffect(() => {
+    if (state !== "success") return;
+    getAccountMe(getDeviceId()).then((a) => setLinked(!!a?.linked)).catch(() => setLinked(false));
+  }, [state]);
 
   return (
     <div data-testid="paywall-success" className="space-y-6 pt-4">
@@ -54,6 +64,23 @@ export default function PaywallSuccess() {
                   : "Premium active for 30 days."}
             </div>
           </div>
+
+          {/* Auto-link prompt — the highest-conversion moment for protecting their purchase */}
+          {linked === false && (
+            <div className="brut-card p-5 space-y-4 border-brand-primary" data-testid="post-purchase-link-prompt">
+              <div className="flex items-center gap-2">
+                <Mail size={20} className="text-brand-primary" />
+                <span className="label-tag">PROTECT YOUR PURCHASE</span>
+              </div>
+              <h2 className="font-display font-black uppercase tracking-tight text-xl">
+                Sync premium to all your devices.
+              </h2>
+              <p className="font-mono text-sm text-foreground/80">
+                Right now your premium is tied to <strong>this device only</strong>. Link your email so it follows you to your phone, tablet & laptop — and stays safe if you clear browser data.
+              </p>
+              <AccountLinkCard hideHeader compact />
+            </div>
+          )}
 
           <div className="space-y-3">
             <Link to="/collections" data-testid="success-collections" className="btn-arcade w-full">

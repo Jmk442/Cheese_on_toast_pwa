@@ -31,12 +31,56 @@ client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ["DB_NAME"]]
 
 STRIPE_KEY = os.environ.get("STRIPE_API_KEY")
+ALLOW_DEV_MAGIC_LINK = os.environ.get("ALLOW_DEV_MAGIC_LINK", "1") == "1"  # set to 0 in prod
 
 app = FastAPI(title="Cheese on Toast API")
 api = APIRouter(prefix="/api")
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger("cot")
+
+
+# -----------------------------------------------------------------------------
+# Simple in-memory rate-limiter (fine for single-process dev/MVP).
+# Replace with Redis or Mongo TTL if running multiple instances.
+# -----------------------------------------------------------------------------
+class _RateLimiter:
+    def __init__(self):
+        self._hits: Dict[str, List[float]] = {}
+
+    def hit(self, key: str, max_count: int, window_seconds: int) -> bool:
+        """Returns True if allowed; False if rate-limited."""
+        from time import time
+        now_ts = time()
+        window_start = now_ts - window_seconds
+        hits = [t for t in self._hits.get(key, []) if t > window_start]
+        if len(hits) >= max_count:
+            self._hits[key] = hits
+            return False
+        hits.append(now_ts)
+        self._hits[key] = hits
+        return True
+
+rate_limiter = _RateLimiter()
+
+
+@app.on_event("startup")
+async def _on_startup():
+    """Create idempotent indexes for hot collections."""
+    try:
+        await db.users.create_index("device_id", unique=True)
+        await db.accounts.create_index("email", unique=True)
+        await db.magic_links.create_index("token", unique=True)
+        # TTL index — Mongo auto-deletes documents 60s after expires_at.
+        # We store expires_at as ISO string, so we add a parallel `expires_dt`
+        # field at insert-time below for TTL to work. Keep this index even if
+        # field absent (no-op for those docs).
+        await db.magic_links.create_index("expires_dt", expireAfterSeconds=0)
+        await db.payment_transactions.create_index("session_id", unique=True)
+        await db.analytics_events.create_index([("timestamp", -1)])
+        logger.info("Indexes ensured")
+    except Exception as e:
+        logger.warning("Index setup failed: %s", e)
 
 # -----------------------------------------------------------------------------
 # Packages — defined on backend ONLY for security
@@ -135,17 +179,20 @@ class AccountInfo(BaseModel):
 # -----------------------------------------------------------------------------
 import secrets
 
-RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY")  # backend-only; never expose to client
+RESEND_FROM_EMAIL = os.environ.get("RESEND_FROM_EMAIL", "Cheese on Toast <onboarding@resend.dev>")
 MAGIC_LINK_TTL_SECONDS = 900  # 15 min
 
 
 async def _send_magic_link_email(email: str, link: str) -> bool:
-    """Best-effort email send via Resend. Returns True on success.
+    """Send a magic-link email via Resend.
 
-    If RESEND_API_KEY is not configured we skip sending and the caller
-    falls back to dev-mode (link returned in response).
+    Reads RESEND_API_KEY from the server environment ONLY. The key is never
+    placed in logs, responses, or any client-side code. Returns True when
+    the email provider accepted the request.
     """
     if not RESEND_API_KEY:
+        # No provider configured — caller falls back to dev-mode dev_link.
         return False
     try:
         import httpx
@@ -154,15 +201,28 @@ async def _send_magic_link_email(email: str, link: str) -> bool:
                 "https://api.resend.com/emails",
                 headers={"Authorization": f"Bearer {RESEND_API_KEY}"},
                 json={
-                    "from": "Cheese on Toast <noreply@cheeseontoast.app>",
+                    "from": RESEND_FROM_EMAIL,
                     "to": [email],
                     "subject": "Your Cheese on Toast sign-in link",
-                    "html": f"<p>Tap the link to sign in and sync your premium across devices.</p><p><a href=\"{link}\">Sign me in</a></p><p style=\"color:#999;font-size:12px\">Link expires in 15 minutes. Ignore if you didn't request this.</p>",
+                    "html": (
+                        "<div style=\"font-family:system-ui,-apple-system,sans-serif;max-width:480px;margin:0 auto;padding:24px;background:#09090B;color:#FAFAFA;border:2px solid #FACC15\">"
+                        "<h1 style=\"font-family:'Unbounded',sans-serif;text-transform:uppercase;letter-spacing:-0.02em;font-size:24px;margin:0 0 16px\">Sign in</h1>"
+                        "<p style=\"font-size:14px;line-height:1.5\">Tap the button to sign in and sync your premium across devices.</p>"
+                        f"<p style=\"margin:24px 0\"><a href=\"{link}\" style=\"display:inline-block;background:#FACC15;color:#09090B;font-weight:700;text-transform:uppercase;padding:14px 24px;text-decoration:none;border:2px solid #FAFAFA\">Sign me in</a></p>"
+                        "<p style=\"font-size:12px;color:#999\">Link expires in 15 minutes. If you didn't request this, ignore this email.</p>"
+                        "</div>"
+                    ),
                 },
             )
-            return r.status_code < 400
+            if r.status_code < 400:
+                logger.info("magic_link_email_sent provider=resend status=%s", r.status_code)
+                return True
+            # Log status only — never the response body (could echo headers) or key
+            logger.warning("magic_link_email_failed provider=resend status=%s", r.status_code)
+            return False
     except Exception as e:
-        logger.warning("Resend send failed: %s", e)
+        # Log exception type only, not args (defensive)
+        logger.warning("magic_link_email_exception provider=resend type=%s", type(e).__name__)
         return False
 
 
@@ -545,6 +605,16 @@ async def affiliate_preview():
     }
 
 
+@api.get("/health/email")
+async def health_email():
+    """Returns whether the email provider is configured. No secrets exposed."""
+    return {
+        "provider": "resend" if RESEND_API_KEY else "none",
+        "configured": bool(RESEND_API_KEY),
+        "dev_link_fallback": ALLOW_DEV_MAGIC_LINK and not RESEND_API_KEY,
+    }
+
+
 # -----------------------------------------------------------------------------
 # Magic-link authentication
 # -----------------------------------------------------------------------------
@@ -557,6 +627,12 @@ async def magic_link_request(body: MagicLinkRequest):
     if not user:
         raise HTTPException(404, "Device not initialised")
 
+    # Rate limit: 3 requests per device per 10 min, 5 per email per hour
+    if not rate_limiter.hit(f"ml-dev:{body.device_id}", max_count=3, window_seconds=600):
+        raise HTTPException(429, "Too many sign-in requests. Try again in a few minutes.")
+    if not rate_limiter.hit(f"ml-email:{email}", max_count=5, window_seconds=3600):
+        raise HTTPException(429, "Too many sign-in requests for this email. Try again in an hour.")
+
     token = secrets.token_urlsafe(28)
     n = now()
     expires = n + timedelta(seconds=MAGIC_LINK_TTL_SECONDS)
@@ -566,6 +642,7 @@ async def magic_link_request(body: MagicLinkRequest):
         "device_id": body.device_id,
         "created_at": iso(n),
         "expires_at": iso(expires),
+        "expires_dt": expires,  # for TTL index (BSON date)
         "used": False,
     })
 
@@ -581,11 +658,18 @@ async def magic_link_request(body: MagicLinkRequest):
     })
 
     # Dev-mode fallback: return the link directly so the flow works without an
-    # email provider configured.
+    # email provider configured. GATED behind ALLOW_DEV_MAGIC_LINK env flag
+    # (default on for dev; MUST be disabled in production).
+    dev_link = None
+    if not sent and ALLOW_DEV_MAGIC_LINK:
+        dev_link = link
+    elif not sent and not ALLOW_DEV_MAGIC_LINK:
+        # Don't leak the token in prod. Pretend we sent successfully.
+        logger.error("Magic link could not be emailed (no provider) and dev fallback disabled; user will not receive link")
     return MagicLinkResponse(
         ok=True,
         email=email,
-        dev_link=None if sent else link,
+        dev_link=dev_link,
         expires_in=MAGIC_LINK_TTL_SECONDS,
     )
 
@@ -688,9 +772,13 @@ async def account_me(device_id: str):
     }
 
 
+class UnlinkRequest(BaseModel):
+    device_id: str
+
+
 @api.post("/account/unlink")
-async def account_unlink(body: dict):
-    device_id = body.get("device_id")
+async def account_unlink(body: UnlinkRequest):
+    device_id = body.device_id
     if not device_id:
         raise HTTPException(400, "device_id required")
     user = await db.users.find_one({"device_id": device_id})

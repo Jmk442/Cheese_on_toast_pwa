@@ -9,7 +9,7 @@ import { track } from "../lib/analytics";
  * Account link card for the Settings page. Lets the user attach their device
  * to an email account so premium follows them across devices.
  */
-export const AccountLinkCard = () => {
+export const AccountLinkCard = ({ hideHeader = false, compact = false }) => {
   const { refreshPremium } = usePremium();
   const [account, setAccount] = useState(null);   // {linked, email, linked_device_count, premium} | null
   const [email, setEmail] = useState("");
@@ -66,8 +66,8 @@ export const AccountLinkCard = () => {
   if (account?.linked) {
     return (
       <section data-testid="settings-account-linked" className="space-y-3">
-        <h2 className="font-display font-black uppercase tracking-tight text-xl inline-flex items-center gap-2"><Mail size={18} /> Email Account</h2>
-        <div className="brut-card p-4 space-y-2">
+        {!hideHeader && <h2 className="font-display font-black uppercase tracking-tight text-xl inline-flex items-center gap-2"><Mail size={18} /> Email Account</h2>}
+        <div className={`brut-card p-4 space-y-2 ${compact ? "shadow-none border-brand-primary" : ""}`}>
           <div className="flex items-center gap-2">
             <Check size={16} className="text-brand-primary" />
             <span className="font-display font-bold uppercase text-sm">Linked</span>
@@ -91,11 +91,13 @@ export const AccountLinkCard = () => {
 
   return (
     <section data-testid="settings-account-unlinked" className="space-y-3">
-      <h2 className="font-display font-black uppercase tracking-tight text-xl inline-flex items-center gap-2"><Mail size={18} /> Link Your Email</h2>
-      <div className="brut-card p-4 space-y-3">
-        <p className="font-mono text-sm text-foreground/80">
-          Sync your premium across phone, tablet & laptop. We email a one-tap sign-in link — no passwords.
-        </p>
+      {!hideHeader && <h2 className="font-display font-black uppercase tracking-tight text-xl inline-flex items-center gap-2"><Mail size={18} /> Link Your Email</h2>}
+      <div className={`${compact ? "" : "brut-card p-4"} space-y-3`}>
+        {!compact && (
+          <p className="font-mono text-sm text-foreground/80">
+            Sync your premium across phone, tablet & laptop. We email a one-tap sign-in link — no passwords.
+          </p>
+        )}
         <form onSubmit={handleRequest} className="flex gap-2">
           <input
             type="email"
