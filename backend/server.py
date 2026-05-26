@@ -106,6 +106,116 @@ class AnalyticsEvent(BaseModel):
     properties: Optional[Dict[str, Any]] = None
 
 
+class MagicLinkRequest(BaseModel):
+    device_id: str
+    email: str
+    origin_url: Optional[str] = None
+
+
+class MagicLinkResponse(BaseModel):
+    ok: bool
+    email: str
+    dev_link: Optional[str] = None  # Returned only when no email provider configured
+    expires_in: int = 900
+
+
+class VerifyMagicLinkRequest(BaseModel):
+    token: str
+    device_id: str
+
+
+class AccountInfo(BaseModel):
+    email: str
+    linked_device_count: int
+    premium: PremiumStatus
+
+
+# -----------------------------------------------------------------------------
+# Email + magic link helpers
+# -----------------------------------------------------------------------------
+import secrets
+
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
+MAGIC_LINK_TTL_SECONDS = 900  # 15 min
+
+
+async def _send_magic_link_email(email: str, link: str) -> bool:
+    """Best-effort email send via Resend. Returns True on success.
+
+    If RESEND_API_KEY is not configured we skip sending and the caller
+    falls back to dev-mode (link returned in response).
+    """
+    if not RESEND_API_KEY:
+        return False
+    try:
+        import httpx
+        async with httpx.AsyncClient(timeout=10) as cx:
+            r = await cx.post(
+                "https://api.resend.com/emails",
+                headers={"Authorization": f"Bearer {RESEND_API_KEY}"},
+                json={
+                    "from": "Cheese on Toast <noreply@cheeseontoast.app>",
+                    "to": [email],
+                    "subject": "Your Cheese on Toast sign-in link",
+                    "html": f"<p>Tap the link to sign in and sync your premium across devices.</p><p><a href=\"{link}\">Sign me in</a></p><p style=\"color:#999;font-size:12px\">Link expires in 15 minutes. Ignore if you didn't request this.</p>",
+                },
+            )
+            return r.status_code < 400
+    except Exception as e:
+        logger.warning("Resend send failed: %s", e)
+        return False
+
+
+def _is_email(s: str) -> bool:
+    s = (s or "").strip()
+    return "@" in s and "." in s.split("@")[-1] and len(s) <= 254
+
+
+async def _get_account(email: str) -> Optional[dict]:
+    return await db.accounts.find_one({"email": email.lower()}, {"_id": 0})
+
+
+async def _resolve_premium(user_doc: dict) -> PremiumStatus:
+    """If the device is linked to an account, return the account's premium.
+    Otherwise return the device's premium."""
+    if not user_doc:
+        return PremiumStatus(is_premium=False, tier="free")
+    email = user_doc.get("account_email")
+    if email:
+        acc = await _get_account(email)
+        if acc:
+            return _compute_premium(acc)
+    return _compute_premium(user_doc)
+
+
+def _better_premium(a: dict, b: dict) -> dict:
+    """Pick the stronger premium state across two docs (acc + user)."""
+    if a.get("is_lifetime") or b.get("is_lifetime"):
+        return {"is_lifetime": True, "premium_until": None,
+                "trial_used": a.get("trial_used", False) or b.get("trial_used", False),
+                "trial_ends_at": a.get("trial_ends_at") or b.get("trial_ends_at")}
+    # Pick whichever premium_until is later
+    def _parse(d):
+        s = d.get("premium_until")
+        if not s:
+            return None
+        try:
+            dt = datetime.fromisoformat(s)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt
+        except Exception:
+            return None
+    pa, pb = _parse(a), _parse(b)
+    best = max([p for p in (pa, pb) if p is not None], default=None)
+    return {
+        "is_lifetime": False,
+        "premium_until": iso(best) if best else None,
+        "trial_used": a.get("trial_used", False) or b.get("trial_used", False),
+        "trial_ends_at": a.get("trial_ends_at") or b.get("trial_ends_at"),
+    }
+
+
 # -----------------------------------------------------------------------------
 # Helpers
 # -----------------------------------------------------------------------------
@@ -163,7 +273,11 @@ def _compute_premium(user_doc: dict) -> PremiumStatus:
 
 
 async def _grant_package(device_id: str, package: str) -> dict:
-    """Extend or set premium for the user based on the package."""
+    """Extend or set premium for the user based on the package.
+
+    If the device is linked to an account, grant happens at the account level
+    so all linked devices benefit.
+    """
     pkg = PACKAGES.get(package)
     if not pkg:
         raise HTTPException(400, f"Unknown package: {package}")
@@ -172,14 +286,23 @@ async def _grant_package(device_id: str, package: str) -> dict:
     if not user:
         raise HTTPException(404, "User not found")
 
+    target_email = user.get("account_email")
+
+    # Compute new premium state from the target's existing state
+    if target_email:
+        target = await _get_account(target_email)
+        if not target:
+            target = {}
+    else:
+        target = user
+
     update: Dict[str, Any] = {"updated_at": iso(now())}
     if pkg["lifetime"]:
         update["is_lifetime"] = True
         update["premium_until"] = None
     else:
         n = now()
-        # If user is already on premium_until in the future, extend from that point
-        current = user.get("premium_until")
+        current = target.get("premium_until")
         base = n
         if current:
             try:
@@ -193,7 +316,10 @@ async def _grant_package(device_id: str, package: str) -> dict:
         new_end = base + timedelta(days=pkg["extends_days"])
         update["premium_until"] = iso(new_end)
 
-    await db.users.update_one({"device_id": device_id}, {"$set": update})
+    if target_email:
+        await db.accounts.update_one({"email": target_email}, {"$set": update})
+    else:
+        await db.users.update_one({"device_id": device_id}, {"$set": update})
     return update
 
 
@@ -247,7 +373,7 @@ async def users_init(body: InitRequest):
             "timestamp": iso(n),
         })
 
-    premium = _compute_premium(user)
+    premium = await _resolve_premium(user)
     return UserResponse(
         device_id=device_id,
         created_at=user["created_at"],
@@ -260,7 +386,7 @@ async def get_premium(device_id: str):
     user = await db.users.find_one({"device_id": device_id}, {"_id": 0})
     if not user:
         raise HTTPException(404, "User not found")
-    return _compute_premium(user)
+    return await _resolve_premium(user)
 
 
 @api.post("/checkout/session", response_model=CheckoutResponse)
@@ -417,6 +543,163 @@ async def affiliate_preview():
         "cookie_window_days": 30,
         "waitlist_open": True,
     }
+
+
+# -----------------------------------------------------------------------------
+# Magic-link authentication
+# -----------------------------------------------------------------------------
+@api.post("/auth/magic-link/request", response_model=MagicLinkResponse)
+async def magic_link_request(body: MagicLinkRequest):
+    email = (body.email or "").strip().lower()
+    if not _is_email(email):
+        raise HTTPException(400, "Invalid email")
+    user = await db.users.find_one({"device_id": body.device_id})
+    if not user:
+        raise HTTPException(404, "Device not initialised")
+
+    token = secrets.token_urlsafe(28)
+    n = now()
+    expires = n + timedelta(seconds=MAGIC_LINK_TTL_SECONDS)
+    await db.magic_links.insert_one({
+        "token": token,
+        "email": email,
+        "device_id": body.device_id,
+        "created_at": iso(n),
+        "expires_at": iso(expires),
+        "used": False,
+    })
+
+    origin = (body.origin_url or "").rstrip("/") or ""
+    link = f"{origin}/auth/verify?token={token}" if origin else f"/auth/verify?token={token}"
+
+    sent = await _send_magic_link_email(email, link)
+    await db.analytics_events.insert_one({
+        "device_id": body.device_id,
+        "event": "magic_link_requested",
+        "properties": {"email_domain": email.split("@")[-1], "sent": sent},
+        "timestamp": iso(n),
+    })
+
+    # Dev-mode fallback: return the link directly so the flow works without an
+    # email provider configured.
+    return MagicLinkResponse(
+        ok=True,
+        email=email,
+        dev_link=None if sent else link,
+        expires_in=MAGIC_LINK_TTL_SECONDS,
+    )
+
+
+@api.post("/auth/magic-link/verify")
+async def magic_link_verify(body: VerifyMagicLinkRequest):
+    rec = await db.magic_links.find_one({"token": body.token})
+    if not rec:
+        raise HTTPException(400, "Invalid or expired link")
+    if rec.get("used"):
+        raise HTTPException(400, "Link already used")
+    try:
+        exp = datetime.fromisoformat(rec["expires_at"])
+        if exp.tzinfo is None:
+            exp = exp.replace(tzinfo=timezone.utc)
+        if exp < now():
+            raise HTTPException(400, "Link expired")
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(400, "Invalid link")
+
+    email = rec["email"]
+    device_id = body.device_id
+
+    # Ensure device exists
+    user = await db.users.find_one({"device_id": device_id})
+    if not user:
+        raise HTTPException(404, "Device not initialised")
+
+    # Find or create account
+    account = await db.accounts.find_one({"email": email})
+    if not account:
+        account = {
+            "email": email,
+            "created_at": iso(now()),
+            "updated_at": iso(now()),
+            "is_lifetime": False,
+            "premium_until": None,
+            "trial_used": False,
+            "trial_ends_at": None,
+            "device_ids": [device_id],
+        }
+        # Inherit any premium the device currently has so we don't downgrade
+        merged = _better_premium(user, account)
+        account.update(merged)
+        await db.accounts.insert_one(account.copy())
+    else:
+        # Merge premium upward (best of account vs device)
+        merged = _better_premium(account, user)
+        await db.accounts.update_one(
+            {"email": email},
+            {"$set": {**merged, "updated_at": iso(now())},
+             "$addToSet": {"device_ids": device_id}},
+        )
+
+    # Link the device to the account
+    await db.users.update_one(
+        {"device_id": device_id},
+        {"$set": {"account_email": email, "updated_at": iso(now())}},
+    )
+    await db.magic_links.update_one({"token": body.token}, {"$set": {"used": True, "used_at": iso(now())}})
+
+    await db.analytics_events.insert_one({
+        "device_id": device_id,
+        "event": "magic_link_verified",
+        "properties": {"email_domain": email.split("@")[-1]},
+        "timestamp": iso(now()),
+    })
+
+    refreshed_user = await db.users.find_one({"device_id": device_id}, {"_id": 0})
+    premium = await _resolve_premium(refreshed_user)
+    acc_after = await _get_account(email)
+    return {
+        "ok": True,
+        "account": {
+            "email": email,
+            "linked_device_count": len(acc_after.get("device_ids", [])) if acc_after else 1,
+            "premium": premium.model_dump(),
+        },
+    }
+
+
+@api.get("/account/me")
+async def account_me(device_id: str):
+    user = await db.users.find_one({"device_id": device_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(404, "Device not initialised")
+    email = user.get("account_email")
+    if not email:
+        return {"linked": False}
+    acc = await _get_account(email)
+    if not acc:
+        return {"linked": False}
+    return {
+        "linked": True,
+        "email": email,
+        "linked_device_count": len(acc.get("device_ids", [])),
+        "premium": (await _resolve_premium(user)).model_dump(),
+    }
+
+
+@api.post("/account/unlink")
+async def account_unlink(body: dict):
+    device_id = body.get("device_id")
+    if not device_id:
+        raise HTTPException(400, "device_id required")
+    user = await db.users.find_one({"device_id": device_id})
+    if not user or not user.get("account_email"):
+        return {"ok": True}
+    email = user["account_email"]
+    await db.users.update_one({"device_id": device_id}, {"$unset": {"account_email": ""}})
+    await db.accounts.update_one({"email": email}, {"$pull": {"device_ids": device_id}})
+    return {"ok": True}
 
 
 # -----------------------------------------------------------------------------

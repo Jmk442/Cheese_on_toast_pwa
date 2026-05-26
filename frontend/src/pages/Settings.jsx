@@ -5,6 +5,7 @@ import { SeoHead } from "../components/SeoHead";
 import { usePremium } from "../context/PremiumContext";
 import { getAffiliatePreview } from "../lib/api";
 import { track } from "../lib/analytics";
+import { AccountLinkCard } from "../components/AccountLinkCard";
 
 const THEMES = [
   { id: "yellow", label: "Classic Yellow", swatch: "#FACC15", free: true },
@@ -73,6 +74,9 @@ export default function Settings() {
           )}
         </div>
       </section>
+
+      {/* Account link */}
+      <AccountLinkCard />
 
       {/* Cosmetics */}
       <section data-testid="settings-cosmetics" className="space-y-3">

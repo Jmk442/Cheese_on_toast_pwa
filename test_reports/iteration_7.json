@@ -1,0 +1,26 @@
+{
+  "summary": "Iter 7 magic-link auth + cross-device account linking fully tested. Backend pytest suite 12/12 passing; frontend Playwright happy path on mobile 414x896 passes end-to-end (unlinked card -> submit -> dev-link -> /auth/verify success -> auto-redirect to /settings -> linked card -> unlink -> back to unlinked card; /auth/verify with no token shows verify-error). No overflow issues on /settings or /auth/verify at 414x896. RESEND_API_KEY is intentionally unset and dev_link is returned in the API response (explicit dev fallback per the request).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_iter7_magic_link.py",
+    "/app/test_reports/pytest/pytest_iter7.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "auth/magic-link/request leaks dev_link in response when RESEND_API_KEY is unset — this is the intended dev fallback per the request, but the README/PRD should explicitly note that RESEND_API_KEY MUST be set before any public/prod deploy, otherwise anyone can hijack any email account by hitting the endpoint and getting a usable verify token in the JSON body.",
+    "magic_links collection has no index on `token`; consider db.magic_links.create_index('token', unique=True) and a TTL index on expires_at for automatic cleanup.",
+    "accounts collection has no unique index on `email`; concurrent verifies for a new email could race and create duplicate docs. Add unique index.",
+    "POST /api/account/unlink uses `body: dict` instead of a Pydantic model — inconsistent with the rest of the API and skips validation.",
+    "No rate-limiting on /api/auth/magic-link/request — same device_id can spam unlimited tokens for arbitrary emails (each token is valid 15min). Recommend per-device + per-email throttle.",
+    "server.py is ~720 lines — fine for now but approaching the 700-line guideline; magic-link logic could be split into auth.py module."
+  ],
+  "updated_files": ["/app/backend/tests/test_iter7_magic_link.py"],
+  "success_rate": {"backend": "100% (12/12)", "frontend": "100% (8/8 assertions)"},
+  "test_credentials": "None required — anonymous device_id + ad-hoc email addresses (TEST_/playwright+ prefixes used).",
+  "seed_data_creation": "Tests create their own device_ids per test (uuid-based) and use ad-hoc emails; no fixed seed data needed. Direct mongo mutations used to simulate paid lifetime state (per the iter-7 instructions).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Iter 7 magic-link auth shipped clean. Backend regression file lives at /app/backend/tests/test_iter7_magic_link.py and covers request/verify/cross-device-transfer/unlink/account_me + light regression (init, checkout AUD, affiliate). Older suite at /app/backend/tests/test_premium_api.py is still around for iter 1-6 regression. RESEND_API_KEY is intentionally unset; dev_link in response is the contract — do not flag as a bug. /auth/verify has data-testid='verify-success' | 'verify-error' | 'verify-loading'. AccountLinkCard testids: settings-account-unlinked, settings-account-linked, auth-email-input, auth-send-link, auth-dev-link, dev-link-anchor, linked-email, account-unlink.",
+  "rca of the issue": "No bugs found."
+}

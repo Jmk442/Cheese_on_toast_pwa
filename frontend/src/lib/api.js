@@ -25,3 +25,15 @@ export const postEvent = (device_id, event, properties = {}) =>
 
 export const getAffiliatePreview = () =>
   apiClient.get("/affiliate/preview").then((r) => r.data);
+
+export const requestMagicLink = (device_id, email, origin_url) =>
+  apiClient.post("/auth/magic-link/request", { device_id, email, origin_url }).then((r) => r.data);
+
+export const verifyMagicLink = (token, device_id) =>
+  apiClient.post("/auth/magic-link/verify", { token, device_id }).then((r) => r.data);
+
+export const getAccountMe = (device_id) =>
+  apiClient.get(`/account/me?device_id=${encodeURIComponent(device_id)}`).then((r) => r.data);
+
+export const unlinkAccount = (device_id) =>
+  apiClient.post("/account/unlink", { device_id }).then((r) => r.data);

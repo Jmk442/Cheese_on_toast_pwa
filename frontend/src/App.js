@@ -18,6 +18,7 @@ import MealPlan from "@/pages/MealPlan";
 import GroceryList from "@/pages/GroceryList";
 import SavedRecipes from "@/pages/SavedRecipes";
 import Settings from "@/pages/Settings";
+import AuthVerify from "@/pages/AuthVerify";
 
 function App() {
   return (
@@ -41,6 +42,7 @@ function App() {
             <Route path="/grocery-list" element={<GroceryList />} />
             <Route path="/saved" element={<SavedRecipes />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/auth/verify" element={<AuthVerify />} />
             <Route path="*" element={<Home />} />
           </Routes>
         </Layout>
