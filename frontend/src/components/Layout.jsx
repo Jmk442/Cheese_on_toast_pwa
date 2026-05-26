@@ -63,7 +63,7 @@ export const Layout = ({ children }) => {
         </div>
       </header>
 
-      <main className="flex-1 max-w-3xl w-full mx-auto px-5 pb-28 pt-4">{children}</main>
+      <main className="flex-1 max-w-3xl w-full mx-auto px-5 pb-36 pt-4">{children}</main>
 
       <nav
         data-testid="bottom-nav"
