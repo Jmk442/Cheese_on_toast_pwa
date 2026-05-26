@@ -19,7 +19,8 @@ module.exports = {
         surface: "#18181B",
         ink: "#09090B",
         brand: {
-          primary: "#FACC15",
+          primary: "rgb(var(--cot-primary-rgb) / <alpha-value>)",
+          "primary-hover": "var(--cot-primary-hover)",
           danger: "#EF4444",
           toxic: "#84CC16",
           perfect: "#3B82F6",
@@ -36,8 +37,8 @@ module.exports = {
         ring: "hsl(var(--ring))",
       },
       boxShadow: {
-        brut: "6px 6px 0px #FACC15",
-        "brut-sm": "3px 3px 0px #FACC15",
+        brut: "6px 6px 0px var(--cot-primary)",
+        "brut-sm": "3px 3px 0px var(--cot-primary)",
         "brut-white": "6px 6px 0px #FAFAFA",
         "brut-danger": "6px 6px 0px #EF4444",
       },

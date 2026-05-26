@@ -27,31 +27,16 @@ A mobile-first teen cooking guide centred on "how to make cheese on toast" with 
 - SEO: index.html with Recipe JSON-LD; dynamic SeoHead per page; sitemap + robots
 - PWA manifest
 
-### Premium tier — NEW
-- **Backend (FastAPI + MongoDB + Stripe test-mode)**:
-  - `/api/users/init` — auto-grants 3-day trial on first call
-  - `/api/users/{id}/premium` — current status
-  - `/api/checkout/session` — creates Stripe Checkout (monthly A$3.99 OR lifetime A$24.99)
-  - `/api/checkout/status/{sid}` — polls + grants idempotently
-  - `/api/webhook/stripe` — secondary safety net
-  - `/api/analytics/event` — event ingestion (offline-queueing client)
-  - `/api/affiliate/preview` — placeholder for affiliate program
+### Premium tier
+- **Backend (FastAPI + MongoDB + Stripe test-mode AUD)**:
+  - `/api/users/init`, `/premium`, `/checkout/session`, `/checkout/status/{sid}`, `/webhook/stripe`, `/analytics/event`, `/affiliate/preview`
   - Collections: `users`, `payment_transactions`, `analytics_events`, `referrals`
 - **Frontend premium architecture**:
-  - `PremiumProvider` — global context (user, premium, trialDaysLeft, startCheckout, pollCheckout, cosmetic, savedSlugs, track)
-  - `PremiumGate` — wraps premium content with locked overlay + paywall CTAs
-  - `PaywallTrigger` — global modal manager with 3 strategies (first-launch 25s, interruption ≥3 plays, achievement ≥3 badges) and 24h-dismiss memory
-  - `Paywall` page (`/premium`) — plan selector, 6 perks, parent-psychology yellow section, 6-collection peek, testimonials, AUD pricing
-  - `PaywallSuccess` (`/premium/success`) — polls Stripe status + unlocks confirmation
-  - 10 collection pages (`/collections/*`): Moving Out Survival Pack, Budget (A$2 or less), Air Fryer, Study Snacks, Late Night, Meal Plan, Grocery, Offline, Seasonal, Cosmetics
-  - `MealPlan` (`/meal-plan`) — 7-day editable plan, persists to localStorage
-  - `GroceryList` (`/grocery-list`) — add/remove/tick items grouped by aisle + native share
-  - `SavedRecipes` (`/saved`) — star-saved recipes for offline access
-  - `Settings` (`/settings`) — subscription mgmt, 4 kitchen themes (Yellow/Neon/Mint/Slime), referral link, affiliate waitlist, push+email opt-ins (placeholders), device reset
-  - Header trial-countdown pill / Upgrade pill
-  - 5-tab bottom nav (Home/Premium/Recipes/Sandbox/Settings)
-  - Home premium banner (active or upsell)
-- **All pricing in AUD** — A$3.99/mo, A$24.99 lifetime, A$2-A$30 budget references
+  - `PremiumProvider` context, `PremiumGate`, `PaywallTrigger` (3 strategies)
+  - `Paywall`, `PaywallSuccess`, 10 collection pages, `MealPlan`, `GroceryList`, `SavedRecipes`, `Settings`
+  - Header trial pill / Upgrade pill, 5-tab bottom nav, Home premium banner
+- **Cosmetic themes (live, NEW)**: Yellow (free), Neon Pink, Mint Calm, Toxic Slime — all premium. Switching the theme in Settings rewrites a CSS custom property `--cot-primary` via `data-cot-theme` on `<html>`, re-skinning every brand surface (buttons, cards, label tags, shadows, header pill, paywall) across the entire app instantly and persistently.
+- **All pricing in AUD** — A$3.99/mo, A$24.99 lifetime
 - **Tested**: iter 1 (14/14), iter 2 (12/12), iter 3 (47/48), iter 4 (12/12), iter 5 (backend 12/12, frontend 95%), iter 6 (backend 12/12, frontend ✓, UX bug found & fixed)
 
 ### Recent fix
@@ -64,6 +49,7 @@ A mobile-first teen cooking guide centred on "how to make cheese on toast" with 
 - Real push notifications (Web Push + VAPID + service worker)
 - Email signup + magic-link upgrade so premium transfers across devices
 - Affiliate program launch (currently placeholder)
+- Family Plan tier (A$49.99/year covers 4 device-ids)
 
 **P2**
 - Avatar / kitchen scene customisation (currently theme only)

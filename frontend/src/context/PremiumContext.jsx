@@ -27,6 +27,13 @@ export const PremiumProvider = ({ children }) => {
     } catch { /* noop */ }
   }, []);
 
+  // Apply theme attribute on <html> whenever cosmetic changes
+  useEffect(() => {
+    try {
+      document.documentElement.setAttribute("data-cot-theme", cosmetic || "yellow");
+    } catch { /* noop */ }
+  }, [cosmetic]);
+
   const setCosmetic = useCallback((name) => {
     setCosmeticState(name);
     try { localStorage.setItem(COSMETIC_KEY, name); } catch { /* noop */ }

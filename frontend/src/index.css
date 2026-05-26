@@ -17,9 +17,36 @@ body {
   overscroll-behavior-y: none;
 }
 
+/* Theme tokens — swapped via [data-cot-theme] on <html> */
+:root,
+[data-cot-theme="yellow"] {
+  --cot-primary: #FACC15;
+  --cot-primary-rgb: 250 204 21;
+  --cot-primary-hover: #FDE047;
+  --cot-primary-ink: #09090B;
+}
+[data-cot-theme="neon"] {
+  --cot-primary: #EC4899;
+  --cot-primary-rgb: 236 72 153;
+  --cot-primary-hover: #F472B6;
+  --cot-primary-ink: #FFFFFF;
+}
+[data-cot-theme="mint"] {
+  --cot-primary: #10B981;
+  --cot-primary-rgb: 16 185 129;
+  --cot-primary-hover: #34D399;
+  --cot-primary-ink: #09090B;
+}
+[data-cot-theme="slime"] {
+  --cot-primary: #84CC16;
+  --cot-primary-rgb: 132 204 22;
+  --cot-primary-hover: #A3E635;
+  --cot-primary-ink: #09090B;
+}
+
 ::selection {
-  background: #FACC15;
-  color: #09090B;
+  background: var(--cot-primary);
+  color: var(--cot-primary-ink);
 }
 
 /* Subtle film grain */
@@ -77,17 +104,17 @@ code, pre, .font-mono {
 .brut-card {
   border: 2px solid #FAFAFA;
   background: #18181B;
-  box-shadow: 6px 6px 0 #FACC15;
+  box-shadow: 6px 6px 0 var(--cot-primary);
   transition: transform 120ms ease, box-shadow 120ms ease;
 }
 .brut-card:hover {
   transform: translate(-2px,-2px);
-  box-shadow: 8px 8px 0 #FACC15;
+  box-shadow: 8px 8px 0 var(--cot-primary);
 }
 .brut-card-yellow {
   border: 2px solid #09090B;
-  background: #FACC15;
-  color: #09090B;
+  background: var(--cot-primary);
+  color: var(--cot-primary-ink);
   box-shadow: 6px 6px 0 #FAFAFA;
 }
 .btn-arcade {
@@ -96,8 +123,8 @@ code, pre, .font-mono {
   justify-content: center;
   gap: .5rem;
   border: 2px solid #FAFAFA;
-  background: #FACC15;
-  color: #09090B;
+  background: var(--cot-primary);
+  color: var(--cot-primary-ink);
   font-family: "Unbounded", sans-serif;
   font-weight: 800;
   text-transform: uppercase;
@@ -110,10 +137,10 @@ code, pre, .font-mono {
   user-select: none;
 }
 .btn-arcade:active { transform: translate(4px,4px); box-shadow: 0 0 0 #FAFAFA; }
-.btn-arcade:hover { background: #FDE047; }
+.btn-arcade:hover { background: var(--cot-primary-hover); }
 .btn-arcade.btn-danger { background: #EF4444; color: #fff; }
 .btn-arcade.btn-danger:hover { background: #DC2626; }
-.btn-arcade.btn-ghost { background: transparent; color: #FAFAFA; box-shadow: 4px 4px 0 #FACC15; }
+.btn-arcade.btn-ghost { background: transparent; color: #FAFAFA; box-shadow: 4px 4px 0 var(--cot-primary); }
 .btn-arcade.btn-ghost:hover { background: #FAFAFA; color: #09090B; }
 
 .label-tag {
@@ -124,8 +151,8 @@ code, pre, .font-mono {
   text-transform: uppercase;
   padding: 0.25rem 0.5rem;
   background: #09090B;
-  color: #FACC15;
-  border: 1.5px solid #FACC15;
+  color: var(--cot-primary);
+  border: 1.5px solid var(--cot-primary);
 }
 
 .crt {
@@ -151,7 +178,7 @@ code, pre, .font-mono {
   border: 3px solid #FAFAFA;
   position: relative;
   border-radius: 8px 8px 4px 4px;
-  box-shadow: inset 0 -10px 0 rgba(0,0,0,0.25), 6px 6px 0 #FACC15;
+  box-shadow: inset 0 -10px 0 rgba(0,0,0,0.25), 6px 6px 0 var(--cot-primary);
 }
 .toaster-slot {
   position: absolute;
