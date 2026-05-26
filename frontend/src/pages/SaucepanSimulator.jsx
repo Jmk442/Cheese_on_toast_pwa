@@ -5,6 +5,7 @@ import { SeoHead } from "../components/SeoHead";
 import { DifficultyPicker } from "../components/DifficultyPicker";
 import { AchievementBanner } from "../components/AchievementBanner";
 import { recordOutcome, BADGES } from "../lib/achievements";
+import { ShareButton } from "../components/ShareButton";
 
 /**
  * Saucepan Stir Meter Simulator
@@ -296,6 +297,7 @@ export default function SaucepanSimulator() {
             <button data-testid="ctrl-reset" onClick={reset} className="btn-arcade btn-ghost w-full">
               <RotateCcw size={18} /> Reset & Try Again
             </button>
+            <ShareButton sim="pan" title={outcome.title} body={outcome.body} detail={outcome} difficulty={difficulty} />
             <Link to="/recipe/saucepan-heating" data-testid="ctrl-read-recipe" className="btn-arcade w-full">
               Read The Real Recipe
             </Link>

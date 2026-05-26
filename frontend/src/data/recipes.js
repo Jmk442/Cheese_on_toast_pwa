@@ -7,6 +7,10 @@ export const ASSETS = {
   nukeFail: "https://static.prod-images.emergentagent.com/jobs/095313e1-c866-46da-b6f8-9627abf19281/images/c4636fe9caeab2f79f27b4056be6455fd8fed7eaf485c1bd7c9f197860ce88e3.png",
   friedRice: "https://static.prod-images.emergentagent.com/jobs/095313e1-c866-46da-b6f8-9627abf19281/images/23baa3b354c95073b9eb45fed3ca3bbf7725386a5477b8bcbaaeb9fcc1176a2f.png",
   sushi: "https://static.prod-images.emergentagent.com/jobs/095313e1-c866-46da-b6f8-9627abf19281/images/24f4767febfa9919e154a3a6c5aa113ed1daaac58d6a0928a6d6226a8ee2db3f.png",
+  eggs: "/img/recipe-eggs.png",
+  pasta: "/img/recipe-pasta.png",
+  beans: "/img/recipe-beans.png",
+  saucepan: "/img/recipe-saucepan.png",
 };
 
 export const RECIPES = [
@@ -148,7 +152,7 @@ export const RECIPES = [
     tagline: "Heat anything up using just a pan and a hob.",
     time: "5 min",
     difficulty: "EASY",
-    image: ASSETS.toaster,
+    image: ASSETS.saucepan,
     simulatorPath: "/simulator/saucepan-heating",
     ingredients: [
       "Whatever you want to heat (soup, beans, leftovers, pasta sauce, etc.)",
@@ -177,7 +181,7 @@ export const RECIPES = [
     tagline: "Low heat. Stir slowly. Off the pan early.",
     time: "5 min",
     difficulty: "EASY",
-    image: ASSETS.friedRice,
+    image: ASSETS.eggs,
     ingredients: [
       "2 eggs",
       "A small knob of butter",
@@ -207,7 +211,7 @@ export const RECIPES = [
     tagline: "Salted boiling water. Sauce in a separate pan. Combine.",
     time: "15 min",
     difficulty: "EASY",
-    image: ASSETS.friedRice,
+    image: ASSETS.pasta,
     ingredients: [
       "100g pasta (penne, fusilli or spaghetti)",
       "1 tin of chopped tomatoes (or a jar of tomato sauce)",
@@ -239,7 +243,7 @@ export const RECIPES = [
     tagline: "The national dish. 5 ingredients. 5 minutes.",
     time: "5 min",
     difficulty: "EASY",
-    image: ASSETS.cheeseToast,
+    image: ASSETS.beans,
     simulatorPath: "/simulator/saucepan-heating",
     ingredients: [
       "1 tin of baked beans",
