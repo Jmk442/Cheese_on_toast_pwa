@@ -4,6 +4,9 @@
 A mobile-first PWA cooking app that teaches teenagers basic kitchen skills through retro arcade-style cooking simulators.
 
 Live app: https://toasted-cheese-map.emergent.host
+## Preview
+
+![Cheese on Toast Mobile UI](home-mobile.png)
 
 ## What it does
 
