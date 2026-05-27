@@ -1,4 +1,4 @@
-# Here are your Instructions
+
 # 🧀🔥 Cheese on Toast
 
 A mobile-first PWA cooking app that teaches teenagers basic kitchen skills through retro arcade-style cooking simulators.
