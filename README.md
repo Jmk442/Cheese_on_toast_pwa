@@ -43,6 +43,24 @@ Hosted MVP.
 
 This project is live, public, and under active development.
 
+## Local development
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+### Backend
+
+```bash
+cd backend
+pip install -r requirements.txt
+uvicorn main:app --reload
+```
+
 ## Legal pages
 
 - `/privacy`
