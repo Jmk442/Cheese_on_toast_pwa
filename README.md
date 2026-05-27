@@ -14,7 +14,6 @@ The app includes:
 - Arcade-style cooking challenges
 - Achievements, streak counters, and perfect-run scoring
 - Beginner-friendly recipes
-- Achievements and streaks
 - Mobile-first PWA install support
 - Brutalist black/yellow visual design
 - Privacy, terms, and contact pages
