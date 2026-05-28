@@ -605,6 +605,153 @@ async def affiliate_preview():
     }
 
 
+# -----------------------------------------------------------------------------
+# Web Push Notifications (VAPID + service worker)
+# -----------------------------------------------------------------------------
+from pywebpush import webpush, WebPushException
+import json as _json
+
+VAPID_PUBLIC_KEY = os.environ.get("VAPID_PUBLIC_KEY", "")
+VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "")
+VAPID_SUBJECT = os.environ.get("VAPID_SUBJECT", "mailto:admin@example.com")
+
+
+class PushSubscribeRequest(BaseModel):
+    device_id: str
+    subscription: Dict[str, Any]  # raw browser PushSubscription JSON
+
+
+class PushUnsubscribeRequest(BaseModel):
+    device_id: str
+
+
+@api.get("/push/vapid-public-key")
+async def push_vapid_public_key():
+    """Returns the VAPID public key the browser needs to subscribe."""
+    if not VAPID_PUBLIC_KEY:
+        raise HTTPException(503, "Push not configured")
+    return {"public_key": VAPID_PUBLIC_KEY}
+
+
+@api.post("/push/subscribe")
+async def push_subscribe(body: PushSubscribeRequest):
+    """Stores a browser push subscription against the device id."""
+    if not VAPID_PRIVATE_KEY:
+        raise HTTPException(503, "Push not configured")
+    sub = body.subscription or {}
+    if not sub.get("endpoint"):
+        raise HTTPException(400, "Invalid subscription")
+    await db.push_subscriptions.update_one(
+        {"device_id": body.device_id},
+        {"$set": {
+            "device_id": body.device_id,
+            "subscription": sub,
+            "endpoint": sub.get("endpoint"),
+            "updated_at": iso(now()),
+        }, "$setOnInsert": {"created_at": iso(now())}},
+        upsert=True,
+    )
+    return {"ok": True}
+
+
+@api.post("/push/unsubscribe")
+async def push_unsubscribe(body: PushUnsubscribeRequest):
+    await db.push_subscriptions.delete_one({"device_id": body.device_id})
+    return {"ok": True}
+
+
+def _send_push(subscription: Dict[str, Any], payload: Dict[str, Any]) -> bool:
+    """Send a single push. Returns True on success, False on permanent failure."""
+    if not VAPID_PRIVATE_KEY:
+        return False
+    try:
+        webpush(
+            subscription_info=subscription,
+            data=_json.dumps(payload),
+            vapid_private_key=VAPID_PRIVATE_KEY,
+            vapid_claims={"sub": VAPID_SUBJECT},
+            ttl=86400,  # 24h
+        )
+        return True
+    except WebPushException as e:
+        # 404/410 = subscription is dead; caller should remove it
+        status = getattr(e.response, "status_code", None) if e.response else None
+        if status in (404, 410):
+            return False
+        logger.warning("Push failed: %s", e)
+        return False
+    except Exception as e:
+        logger.warning("Push send error: %s", e)
+        return False
+
+
+@api.post("/push/test")
+async def push_test(body: PushUnsubscribeRequest):
+    """Sends a test notification to a single device — useful for debugging."""
+    rec = await db.push_subscriptions.find_one({"device_id": body.device_id})
+    if not rec:
+        raise HTTPException(404, "No push subscription for this device")
+    ok = _send_push(rec["subscription"], {
+        "title": "Cheese on Toast",
+        "body": "Push notifications are working. Now go cook something.",
+        "url": "/",
+        "tag": "cot-test",
+    })
+    if not ok:
+        # Dead subscription — clean up
+        await db.push_subscriptions.delete_one({"device_id": body.device_id})
+        raise HTTPException(400, "Subscription is no longer valid — please re-enable notifications.")
+    return {"ok": True}
+
+
+@api.post("/push/send-streak-reminders")
+async def push_send_streak_reminders(request: Request):
+    """Cron-style endpoint.
+
+    Iterates over all push subscriptions and sends a streak reminder to any
+    device whose last reminder was >= 3 days ago. Idempotent per-device.
+    Protected by a simple shared-secret header so it isn't publicly callable.
+    """
+    secret = request.headers.get("x-cron-secret", "")
+    expected = os.environ.get("CRON_SECRET", "")
+    if not expected or secret != expected:
+        raise HTTPException(403, "Forbidden")
+
+    cutoff = now() - timedelta(days=3)
+    sent = 0
+    skipped = 0
+    purged = 0
+    async for rec in db.push_subscriptions.find({}):
+        last = rec.get("last_streak_push")
+        last_dt = None
+        if last:
+            try:
+                last_dt = datetime.fromisoformat(last.replace("Z", "+00:00"))
+            except Exception:
+                last_dt = None
+        if last_dt and last_dt > cutoff:
+            skipped += 1
+            continue
+
+        ok = _send_push(rec["subscription"], {
+            "title": "🔥 Your streak is waiting",
+            "body": "It's been a few days. One perfect run keeps the streak alive.",
+            "url": "/",
+            "tag": "cot-streak",
+        })
+        if ok:
+            sent += 1
+            await db.push_subscriptions.update_one(
+                {"_id": rec["_id"]},
+                {"$set": {"last_streak_push": iso(now())}},
+            )
+        else:
+            purged += 1
+            await db.push_subscriptions.delete_one({"_id": rec["_id"]})
+
+    return {"ok": True, "sent": sent, "skipped": skipped, "purged": purged}
+
+
 @api.get("/health/email")
 async def health_email():
     """Returns whether the email provider is configured. No secrets exposed."""
