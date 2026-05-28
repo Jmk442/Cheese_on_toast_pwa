@@ -720,12 +720,19 @@ async def push_send_streak_reminders(request: Request):
 async def _run_streak_reminder_job() -> Dict[str, int]:
     """Send streak reminders to devices last pushed >= 3 days ago.
     Purges dead subscriptions automatically. Returns counts.
+
+    Batched to 500 records per run so we don't load the entire collection
+    into memory at once when the user base grows.
     """
     cutoff = now() - timedelta(days=3)
     sent = 0
     skipped = 0
     purged = 0
-    async for rec in db.push_subscriptions.find({}):
+    cursor = db.push_subscriptions.find(
+        {},
+        {"subscription": 1, "last_streak_push": 1, "device_id": 1},
+    ).limit(500)
+    async for rec in cursor:
         last = rec.get("last_streak_push")
         last_dt = None
         if last:
