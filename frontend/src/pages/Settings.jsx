@@ -15,6 +15,7 @@ export default function Settings() {
   const [emailOptIn, setEmailOptIn] = useState(false);
   const [pushOptIn, setPushOptIn] = useState(false);
   const [unlockedBadgeIds, setUnlockedBadgeIds] = useState([]);
+  const [confirmingReset, setConfirmingReset] = useState(false);
 
   useEffect(() => {
     getAffiliatePreview().then(setAffiliate).catch(() => null);
@@ -208,23 +209,44 @@ export default function Settings() {
       {/* Privacy / analytics */}
       <section data-testid="settings-privacy" className="space-y-3">
         <h2 className="font-display font-black uppercase tracking-tight text-xl inline-flex items-center gap-2"><Shield size={18} /> Privacy & Data</h2>
-        <div className="brut-card p-4 space-y-2 font-mono text-xs text-foreground/70">
+        <div className="brut-card p-4 space-y-3 font-mono text-xs text-foreground/70">
           <div className="inline-flex items-center gap-2"><BarChart3 size={12} /> Anonymous device ID: <span className="text-foreground/40 text-[10px]">{deviceId?.slice(0, 18)}...</span></div>
           <p>We track which features get used so we can build better ones. No email, no name, no contacts.</p>
-          <button
-            type="button"
-            data-testid="reset-device"
-            onClick={() => {
-              if (!window.confirm("This will reset your device ID, achievements, saved recipes and meal plan. Continue?")) return;
-              try {
-                ["cot.device_id.v1", "cot.stats.v1", "cot.saved.v1", "cot.mealplan.v1", "cot.grocery.v1", "cot.cosmetic.v1", "cot.referrer.v1"].forEach((k) => localStorage.removeItem(k));
-              } catch { /* noop */ }
-              window.location.href = "/";
-            }}
-            className="inline-flex items-center gap-2 text-[10px] uppercase tracking-widest text-foreground/60 hover:text-brand-danger"
-          >
-            <RotateCcw size={12} /> Reset everything on this device
-          </button>
+          {confirmingReset ? (
+            <div className="flex items-center gap-2 pt-1" data-testid="reset-device-confirm-row">
+              <span className="text-foreground/70">Wipe device ID, achievements, saved recipes, meal plan?</span>
+              <button
+                type="button"
+                data-testid="reset-device-cancel"
+                onClick={() => setConfirmingReset(false)}
+                className="text-[10px] font-mono uppercase tracking-widest px-2 py-1 border-2 border-white/60"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                data-testid="reset-device-confirm"
+                onClick={() => {
+                  try {
+                    ["cot.device_id.v1", "cot.stats.v1", "cot.saved.v1", "cot.mealplan.v1", "cot.grocery.v1", "cot.cosmetic.v1", "cot.referrer.v1", "cot.streak_reminder.v1"].forEach((k) => localStorage.removeItem(k));
+                  } catch { /* noop */ }
+                  window.location.href = "/";
+                }}
+                className="text-[10px] font-mono uppercase tracking-widest px-2 py-1 border-2 border-brand-danger text-brand-danger"
+              >
+                Wipe
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              data-testid="reset-device"
+              onClick={() => setConfirmingReset(true)}
+              className="inline-flex items-center gap-2 text-[10px] uppercase tracking-widest text-foreground/60 hover:text-brand-danger"
+            >
+              <RotateCcw size={12} /> Reset everything on this device
+            </button>
+          )}
         </div>
       </section>
     </div>
