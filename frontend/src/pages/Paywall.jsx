@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Crown, Check, Sparkles, AlertTriangle } from "lucide-react";
+import { Crown, Check, Sparkles, AlertTriangle, ArrowLeft } from "lucide-react";
 import { usePremium } from "../context/PremiumContext";
 import { SeoHead } from "../components/SeoHead";
 import { COLLECTIONS } from "../data/collections";
@@ -42,6 +42,16 @@ export default function Paywall() {
         description="3-day free trial. A$3.99/mo or one-time A$24.99 lifetime. Unlock 10 recipe collections, meal planner, grocery lists, offline access and cosmetics."
         canonicalPath="/premium"
       />
+
+      <div className="pt-1">
+        <Link
+          to="/"
+          data-testid="paywall-back-free"
+          className="inline-flex items-center gap-1 text-[11px] font-mono uppercase tracking-widest text-foreground/60 hover:text-brand-primary"
+        >
+          <ArrowLeft size={14} /> Back to free recipes
+        </Link>
+      </div>
 
       <header className="space-y-3 pt-2">
         <span className="label-tag">PREMIUM</span>
@@ -113,8 +123,18 @@ export default function Paywall() {
           className="btn-arcade w-full text-base sm:text-lg"
         >
           <Sparkles size={20} />
-          {pkg === "lifetime" ? "Get Lifetime — A$24.99" : "Start 3-Day Free Trial"}
+          {busy ? "Opening checkout…" : pkg === "lifetime" ? "Get Lifetime — A$24.99" : "Start 3-Day Free Trial"}
         </button>
+        {busy && (
+          <button
+            type="button"
+            data-testid="paywall-cancel-busy"
+            onClick={() => setBusy(false)}
+            className="w-full py-2 text-[11px] font-mono uppercase tracking-widest text-foreground/60 hover:text-brand-primary"
+          >
+            Cancel
+          </button>
+        )}
         {err && (
           <div className="border-2 border-brand-danger p-3 flex items-start gap-2 text-brand-danger font-mono text-xs" data-testid="paywall-error">
             <AlertTriangle size={14} className="mt-0.5" /> {err}
