@@ -8,22 +8,63 @@ import { track } from "../lib/analytics";
 import { AccountLinkCard } from "../components/AccountLinkCard";
 import { THEMES, isThemeUnlocked } from "../lib/themes";
 import { getStats } from "../lib/achievements";
+import { pushSupported, getPushStatus, subscribeToPush, unsubscribeFromPush, sendTestPush } from "../lib/push";
 
 export default function Settings() {
   const { deviceId, premium, isPremium, isLifetime, isTrial, trialDaysLeft, cosmetic, setCosmetic } = usePremium();
   const [affiliate, setAffiliate] = useState(null);
   const [emailOptIn, setEmailOptIn] = useState(false);
-  const [pushOptIn, setPushOptIn] = useState(false);
+  const [pushState, setPushState] = useState({ supported: false, permission: "default", subscribed: false });
+  const [pushBusy, setPushBusy] = useState(false);
+  const [pushMsg, setPushMsg] = useState(null);
   const [unlockedBadgeIds, setUnlockedBadgeIds] = useState([]);
+  const [confirmingReset, setConfirmingReset] = useState(false);
 
   useEffect(() => {
     getAffiliatePreview().then(setAffiliate).catch(() => null);
     setUnlockedBadgeIds(getStats().unlocked || []);
-    // Refresh badge list when window regains focus (after finishing a sim)
+    getPushStatus().then(setPushState).catch(() => null);
     const onFocus = () => setUnlockedBadgeIds(getStats().unlocked || []);
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);
   }, []);
+
+  const togglePush = async (enable) => {
+    if (!deviceId) return;
+    setPushBusy(true);
+    setPushMsg(null);
+    try {
+      if (enable) {
+        await subscribeToPush(deviceId);
+        track("push_subscribed");
+        setPushMsg({ tone: "ok", text: "Notifications enabled. We'll only ping you about streaks and big wins." });
+      } else {
+        await unsubscribeFromPush(deviceId);
+        track("push_unsubscribed");
+        setPushMsg({ tone: "ok", text: "Notifications turned off." });
+      }
+      setPushState(await getPushStatus());
+    } catch (e) {
+      setPushMsg({ tone: "err", text: e?.message || "Couldn't update notifications." });
+    } finally {
+      setPushBusy(false);
+    }
+  };
+
+  const onTestPush = async () => {
+    if (!deviceId) return;
+    setPushBusy(true);
+    setPushMsg(null);
+    try {
+      await sendTestPush(deviceId);
+      setPushMsg({ tone: "ok", text: "Test sent — check for the notification." });
+      track("push_test_sent");
+    } catch (e) {
+      setPushMsg({ tone: "err", text: e?.message || "Couldn't send test notification." });
+    } finally {
+      setPushBusy(false);
+    }
+  };
 
   const handleTheme = (t) => {
     if (!isThemeUnlocked(t, { isPremium, unlockedBadgeIds })) return;
@@ -174,23 +215,68 @@ export default function Settings() {
         </div>
       </section>
 
-      {/* Engagement (push placeholder + email) */}
+      {/* Engagement (push + email) */}
       <section data-testid="settings-engagement" className="space-y-3">
         <h2 className="font-display font-black uppercase tracking-tight text-xl">Notifications</h2>
         <div className="brut-card p-4 space-y-3">
-          <label className="flex items-start gap-3 cursor-pointer" data-testid="opt-push">
-            <input
-              type="checkbox"
-              checked={pushOptIn}
-              onChange={(e) => { setPushOptIn(e.target.checked); track("push_opt_in_toggled", { value: e.target.checked }); }}
-              className="mt-1 accent-brand-primary"
-            />
-            <div>
-              <div className="font-display font-bold uppercase text-sm inline-flex items-center gap-2"><Bell size={14} /> Push notifications</div>
-              <div className="font-mono text-[11px] text-foreground/60">Mealtime nudges, badge unlocks, streak reminders. (Coming soon — placeholder.)</div>
+          <div data-testid="opt-push" className="space-y-2">
+            <div className="flex items-start gap-3">
+              <span className="mt-1 inline-flex w-9 h-9 items-center justify-center bg-brand-primary text-ink border-2 border-white flex-none">
+                <Bell size={14} strokeWidth={2.5} />
+              </span>
+              <div className="flex-1">
+                <div className="font-display font-bold uppercase text-sm">Push notifications</div>
+                <div className="font-mono text-[11px] text-foreground/60">Streak reminders every few days. No spam, ever.</div>
+                {!pushState.supported && (
+                  <div className="font-mono text-[10px] text-foreground/40 mt-1">Not supported on this browser. Install the app to your home screen first.</div>
+                )}
+                {pushState.permission === "denied" && (
+                  <div className="font-mono text-[10px] text-brand-danger mt-1">You've blocked notifications. Allow them in your browser settings to enable.</div>
+                )}
+              </div>
+              {pushState.supported && pushState.permission !== "denied" && (
+                pushState.subscribed ? (
+                  <button
+                    type="button"
+                    data-testid="push-disable"
+                    onClick={() => togglePush(false)}
+                    disabled={pushBusy}
+                    className="text-[10px] font-mono uppercase tracking-widest px-3 py-2 border-2 border-white/60 hover:border-brand-danger hover:text-brand-danger"
+                  >
+                    {pushBusy ? "…" : "Turn off"}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    data-testid="push-enable"
+                    onClick={() => togglePush(true)}
+                    disabled={pushBusy}
+                    className="text-[10px] font-mono uppercase tracking-widest px-3 py-2 bg-brand-primary text-ink border-2 border-brand-primary"
+                  >
+                    {pushBusy ? "…" : "Enable"}
+                  </button>
+                )
+              )}
             </div>
-          </label>
-          <label className="flex items-start gap-3 cursor-pointer" data-testid="opt-email">
+            {pushState.subscribed && (
+              <button
+                type="button"
+                data-testid="push-test"
+                onClick={onTestPush}
+                disabled={pushBusy}
+                className="text-[10px] font-mono uppercase tracking-widest text-brand-primary hover:underline"
+              >
+                Send me a test notification
+              </button>
+            )}
+            {pushMsg && (
+              <div data-testid="push-msg" className={`font-mono text-[11px] ${pushMsg.tone === "ok" ? "text-brand-perfect" : "text-brand-danger"}`}>
+                {pushMsg.text}
+              </div>
+            )}
+          </div>
+
+          <label className="flex items-start gap-3 cursor-pointer pt-3 border-t-2 border-white/10" data-testid="opt-email">
             <input
               type="checkbox"
               checked={emailOptIn}
@@ -208,23 +294,44 @@ export default function Settings() {
       {/* Privacy / analytics */}
       <section data-testid="settings-privacy" className="space-y-3">
         <h2 className="font-display font-black uppercase tracking-tight text-xl inline-flex items-center gap-2"><Shield size={18} /> Privacy & Data</h2>
-        <div className="brut-card p-4 space-y-2 font-mono text-xs text-foreground/70">
+        <div className="brut-card p-4 space-y-3 font-mono text-xs text-foreground/70">
           <div className="inline-flex items-center gap-2"><BarChart3 size={12} /> Anonymous device ID: <span className="text-foreground/40 text-[10px]">{deviceId?.slice(0, 18)}...</span></div>
           <p>We track which features get used so we can build better ones. No email, no name, no contacts.</p>
-          <button
-            type="button"
-            data-testid="reset-device"
-            onClick={() => {
-              if (!window.confirm("This will reset your device ID, achievements, saved recipes and meal plan. Continue?")) return;
-              try {
-                ["cot.device_id.v1", "cot.stats.v1", "cot.saved.v1", "cot.mealplan.v1", "cot.grocery.v1", "cot.cosmetic.v1", "cot.referrer.v1"].forEach((k) => localStorage.removeItem(k));
-              } catch { /* noop */ }
-              window.location.href = "/";
-            }}
-            className="inline-flex items-center gap-2 text-[10px] uppercase tracking-widest text-foreground/60 hover:text-brand-danger"
-          >
-            <RotateCcw size={12} /> Reset everything on this device
-          </button>
+          {confirmingReset ? (
+            <div className="flex items-center gap-2 pt-1" data-testid="reset-device-confirm-row">
+              <span className="text-foreground/70">Wipe device ID, achievements, saved recipes, meal plan?</span>
+              <button
+                type="button"
+                data-testid="reset-device-cancel"
+                onClick={() => setConfirmingReset(false)}
+                className="text-[10px] font-mono uppercase tracking-widest px-2 py-1 border-2 border-white/60"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                data-testid="reset-device-confirm"
+                onClick={() => {
+                  try {
+                    ["cot.device_id.v1", "cot.stats.v1", "cot.saved.v1", "cot.mealplan.v1", "cot.grocery.v1", "cot.cosmetic.v1", "cot.referrer.v1", "cot.streak_reminder.v1"].forEach((k) => localStorage.removeItem(k));
+                  } catch { /* noop */ }
+                  window.location.href = "/";
+                }}
+                className="text-[10px] font-mono uppercase tracking-widest px-2 py-1 border-2 border-brand-danger text-brand-danger"
+              >
+                Wipe
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              data-testid="reset-device"
+              onClick={() => setConfirmingReset(true)}
+              className="inline-flex items-center gap-2 text-[10px] uppercase tracking-widest text-foreground/60 hover:text-brand-danger"
+            >
+              <RotateCcw size={12} /> Reset everything on this device
+            </button>
+          )}
         </div>
       </section>
     </div>

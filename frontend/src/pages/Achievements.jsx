@@ -5,13 +5,14 @@ import { BADGES, getStats, resetStats } from "../lib/achievements";
 import { PREMIUM_BADGES } from "../data/collections";
 import { usePremium } from "../context/PremiumContext";
 import { SeoHead } from "../components/SeoHead";
+import { ShareProgress } from "../components/ShareProgress";
 
 const ICONS = { Trophy, Crown, ChefHat, Award, UtensilsCrossed, Flame, Gamepad2, Swords, Backpack, Wallet, Wind, CalendarDays, ShoppingCart, Leaf, Sparkles, Zap };
 
 export default function Achievements() {
   const [stats, setStats] = useState(getStats());
   const [confirming, setConfirming] = useState(false);
-  const { isPremium } = usePremium();
+  const { isPremium, deviceId } = usePremium();
 
   const refresh = () => setStats(getStats());
 
@@ -121,6 +122,13 @@ export default function Achievements() {
           )
         )}
       </div>
+
+      <ShareProgress
+        badgeCount={unlockedCount}
+        totalBadges={BADGES.length}
+        bestStreak={Math.max(stats.cheese?.bestStreak || 0, stats.rice?.bestStreak || 0, stats.pan?.bestStreak || 0)}
+        deviceId={deviceId}
+      />
 
       {/* Badge grid */}
       <section data-testid="badge-grid" className="grid grid-cols-2 sm:grid-cols-3 gap-3">

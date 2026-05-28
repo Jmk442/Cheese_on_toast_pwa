@@ -20,7 +20,7 @@ const setDismissed = (k) => {
     localStorage.setItem(DISMISSED_KEY, JSON.stringify(all));
   } catch { /* noop */ }
 };
-const wasDismissed = (k, withinHours = 24) => {
+const wasDismissed = (k, withinHours = 72) => {
   const all = getDismissed();
   const t = all[k];
   if (!t) return false;
@@ -52,12 +52,12 @@ export const PaywallTrigger = () => {
       if (localStorage.getItem(FIRST_LAUNCH_SHOWN)) return;
     } catch { return; }
     const t = setTimeout(() => {
-      if (wasDismissed("first-launch", 24)) return;
+      if (wasDismissed("first-launch", 72)) return;
       setVariant("first-launch");
       setOpen(true);
       try { localStorage.setItem(FIRST_LAUNCH_SHOWN, "1"); } catch { /* noop */ }
       track("paywall_shown", { kind: "first-launch", is_trial: isTrial });
-    }, 25000);
+    }, 45000);
     return () => clearTimeout(t);
   }, [isOnPaywall, isLifetime, isTrial]);
 
@@ -101,13 +101,22 @@ export const PaywallTrigger = () => {
     return () => clearInterval(interval);
   }, [isOnPaywall, isLifetime]);
 
-  if (!open) return null;
-
   const onDismiss = () => {
     setOpen(false);
     setDismissed(variant);
     track("paywall_dismissed", { kind: variant });
   };
+
+  // Dismiss on ESC key when modal is open
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => { if (e.key === "Escape") onDismiss(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, variant]);
+
+  if (!open) return null;
 
   const COPY = {
     "first-launch": {
@@ -131,20 +140,22 @@ export const PaywallTrigger = () => {
     <div
       data-testid={`paywall-modal-${variant}`}
       role="dialog"
+      aria-modal="true"
+      onClick={(e) => { if (e.target === e.currentTarget) onDismiss(); }}
       className="fixed inset-0 z-[60] bg-ink/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-3 animate-rise"
     >
-      <div className="brut-card max-w-md w-full p-6 space-y-5 relative">
+      <div className="brut-card max-w-md w-full p-6 space-y-5 relative" onClick={(e) => e.stopPropagation()}>
         <button
           type="button"
-          aria-label="Close"
+          aria-label="Close paywall and continue using free version"
           data-testid="paywall-close"
           onClick={onDismiss}
-          className="absolute top-3 right-3 inline-flex w-9 h-9 items-center justify-center border-2 border-white/40 text-foreground/70 hover:border-brand-primary hover:text-brand-primary"
+          className="absolute top-3 right-3 inline-flex w-10 h-10 items-center justify-center border-2 border-white/60 text-foreground hover:border-brand-primary hover:text-brand-primary"
         >
-          <X size={16} />
+          <X size={18} strokeWidth={2.5} />
         </button>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 pr-12">
           <span className="inline-flex w-9 h-9 items-center justify-center bg-brand-primary text-ink border-2 border-white">
             <Crown size={16} strokeWidth={2.5} />
           </span>
@@ -165,7 +176,7 @@ export const PaywallTrigger = () => {
           <Link
             to="/premium"
             data-testid="paywall-cta-trial"
-            onClick={() => track("paywall_cta_click", { kind: variant, target: "trial" })}
+            onClick={() => { onDismiss(); track("paywall_cta_click", { kind: variant, target: "trial" }); }}
             className="btn-arcade w-full"
           >
             <Sparkles size={18} /> Start 3-Day Free Trial
@@ -173,7 +184,7 @@ export const PaywallTrigger = () => {
           <Link
             to="/premium#lifetime"
             data-testid="paywall-cta-lifetime"
-            onClick={() => track("paywall_cta_click", { kind: variant, target: "lifetime" })}
+            onClick={() => { onDismiss(); track("paywall_cta_click", { kind: variant, target: "lifetime" }); }}
             className="btn-arcade btn-ghost w-full"
           >
             See Lifetime (A$24.99)
@@ -182,9 +193,9 @@ export const PaywallTrigger = () => {
             type="button"
             data-testid="paywall-skip"
             onClick={onDismiss}
-            className="text-[11px] font-mono uppercase tracking-widest text-foreground/50 hover:text-foreground py-2"
+            className="w-full mt-1 py-3 border-2 border-white/40 hover:border-white text-foreground font-mono text-xs uppercase tracking-widest transition-colors"
           >
-            Maybe later
+            No thanks — keep using the free version
           </button>
         </div>
 

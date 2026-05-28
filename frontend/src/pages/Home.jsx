@@ -4,6 +4,7 @@ import { RECIPES, ASSETS } from "../data/recipes";
 import { SeoHead, buildRecipeJsonLd } from "../components/SeoHead";
 import { BADGES, getStats } from "../lib/achievements";
 import { usePremium } from "../context/PremiumContext";
+import { StreakReminder } from "../components/StreakReminder";
 
 export default function Home() {
   const flagship = RECIPES.find((r) => r.flagship);
@@ -20,6 +21,8 @@ export default function Home() {
         canonicalPath="/"
         jsonLd={buildRecipeJsonLd(flagship)}
       />
+
+      <StreakReminder />
 
       {/* HERO */}
       <section data-testid="hero" className="space-y-5 pt-2">
