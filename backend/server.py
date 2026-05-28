@@ -706,17 +706,21 @@ async def push_test(body: PushUnsubscribeRequest):
 
 @api.post("/push/send-streak-reminders")
 async def push_send_streak_reminders(request: Request):
-    """Cron-style endpoint.
+    """Cron-style endpoint. Protected by CRON_SECRET.
 
-    Iterates over all push subscriptions and sends a streak reminder to any
-    device whose last reminder was >= 3 days ago. Idempotent per-device.
-    Protected by a simple shared-secret header so it isn't publicly callable.
+    External cron services can hit this; we also run it internally every 12h.
     """
     secret = request.headers.get("x-cron-secret", "")
     expected = os.environ.get("CRON_SECRET", "")
     if not expected or secret != expected:
         raise HTTPException(403, "Forbidden")
+    return await _run_streak_reminder_job()
 
+
+async def _run_streak_reminder_job() -> Dict[str, int]:
+    """Send streak reminders to devices last pushed >= 3 days ago.
+    Purges dead subscriptions automatically. Returns counts.
+    """
     cutoff = now() - timedelta(days=3)
     sent = 0
     skipped = 0
@@ -953,3 +957,41 @@ app.add_middleware(
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
+
+
+# -----------------------------------------------------------------------------
+# Internal scheduler — runs the streak reminder job every 12 hours.
+# Lightweight asyncio loop, no external scheduler dependency.
+# External cron services can also hit /api/push/send-streak-reminders with the
+# CRON_SECRET header if you'd rather drive it from outside the pod.
+# -----------------------------------------------------------------------------
+import asyncio as _asyncio
+
+_scheduler_task = None
+
+
+async def _streak_reminder_scheduler():
+    # Stagger the first run by 5 min so we don't fire instantly on every restart
+    await _asyncio.sleep(300)
+    while True:
+        try:
+            result = await _run_streak_reminder_job()
+            logger.info("Streak reminder job: sent=%s skipped=%s purged=%s",
+                        result.get("sent"), result.get("skipped"), result.get("purged"))
+        except Exception as e:
+            logger.warning("Streak reminder job failed: %s", e)
+        # Run twice a day
+        await _asyncio.sleep(12 * 60 * 60)
+
+
+@app.on_event("startup")
+async def _start_scheduler():
+    global _scheduler_task
+    if os.environ.get("DISABLE_INTERNAL_CRON") == "1":
+        logger.info("Internal cron disabled via DISABLE_INTERNAL_CRON")
+        return
+    if not os.environ.get("VAPID_PRIVATE_KEY"):
+        logger.info("VAPID not configured — internal cron not started")
+        return
+    _scheduler_task = _asyncio.create_task(_streak_reminder_scheduler())
+    logger.info("Internal streak-reminder scheduler started (12h interval)")
