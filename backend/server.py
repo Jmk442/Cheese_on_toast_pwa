@@ -594,15 +594,21 @@ async def stripe_webhook(request: Request):
     if not STRIPE_KEY:
         return {"ok": False, "reason": "stripe_not_configured"}
 
+    if not STRIPE_WEBHOOK_SECRET:
+        logger.warning("Stripe webhook secret missing; rejecting payload")
+        raise HTTPException(400, "Stripe webhook secret not configured")
+
     payload = await request.body()
-    sig = request.headers.get("Stripe-Signature", "")
+    sig = request.headers.get("Stripe-Signature")
+    if not sig:
+        logger.warning("Stripe webhook missing Stripe-Signature header")
+        raise HTTPException(400, "Missing Stripe webhook signature")
 
     try:
-        if STRIPE_WEBHOOK_SECRET:
-            event = stripe.Webhook.construct_event(payload, sig, STRIPE_WEBHOOK_SECRET)
-        else:
-            import json as _json
-            event = _json.loads(payload.decode("utf-8"))
+        event = stripe.Webhook.construct_event(payload, sig, STRIPE_WEBHOOK_SECRET)
+    except stripe.error.SignatureVerificationError:
+        logger.warning("Stripe webhook signature verification failed")
+        raise HTTPException(400, "Invalid Stripe webhook signature")
     except Exception as e:
         logger.warning("Webhook parse failed: %s", type(e).__name__)
         raise HTTPException(400, "Invalid Stripe webhook")
