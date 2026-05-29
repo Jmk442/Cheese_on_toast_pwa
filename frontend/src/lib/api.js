@@ -14,12 +14,8 @@ export const initUser = (device_id, referrer_device_id) =>
 export const getPremium = (device_id) =>
   apiClient.get(`/users/${device_id}/premium`).then((r) => r.data);
 
-export const createCheckoutSession = (device_id, pkg, origin_url) =>
-  apiClient.post("/checkout/session", {
-    device_id,
-    package: pkg,
-    origin_url,
-  }).then((r) => r.data);
+export const createCheckoutSession = (device_id, pkg, origin_url = window.location.origin) =>
+  apiClient.post("/checkout/session", { device_id, package: pkg, origin_url }).then((r) => r.data);
 
 export const getCheckoutStatus = (session_id) =>
   apiClient.get(`/checkout/status/${session_id}`).then((r) => r.data);

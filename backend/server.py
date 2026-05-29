@@ -18,10 +18,7 @@ import os
 import logging
 import uuid
 
-from emergentintegrations.payments.stripe.checkout import (
-    StripeCheckout,
-    CheckoutSessionRequest,
-)
+import stripe
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / ".env")
@@ -31,6 +28,11 @@ client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ["DB_NAME"]]
 
 STRIPE_KEY = os.environ.get("STRIPE_API_KEY")
+STRIPE_MONTHLY_PRICE_ID = os.environ.get("STRIPE_MONTHLY_PRICE_ID")
+STRIPE_LIFETIME_PRICE_ID = os.environ.get("STRIPE_LIFETIME_PRICE_ID")
+STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET")
+if STRIPE_KEY:
+    stripe.api_key = STRIPE_KEY
 ALLOW_DEV_MAGIC_LINK = os.environ.get("ALLOW_DEV_MAGIC_LINK", "1") == "1"  # set to 0 in prod
 
 app = FastAPI(title="Cheese on Toast API")
@@ -86,8 +88,8 @@ async def _on_startup():
 # Packages — defined on backend ONLY for security
 # -----------------------------------------------------------------------------
 PACKAGES = {
-    "monthly":  {"amount": 3.99,  "currency": "aud", "label": "1 month premium", "extends_days": 30,   "lifetime": False},
-    "lifetime": {"amount": 24.99, "currency": "aud", "label": "Lifetime premium", "extends_days": None, "lifetime": True},
+    "monthly":  {"amount": 3.99,  "currency": "aud", "label": "Monthly premium",  "extends_days": 30,   "lifetime": False, "price_env": "STRIPE_MONTHLY_PRICE_ID",  "mode": "subscription"},
+    "lifetime": {"amount": 24.99, "currency": "aud", "label": "Lifetime premium", "extends_days": None, "lifetime": True,  "price_env": "STRIPE_LIFETIME_PRICE_ID", "mode": "payment"},
 }
 
 TRIAL_DAYS = 3
@@ -453,42 +455,64 @@ async def get_premium(device_id: str):
 async def create_checkout(body: CheckoutRequest, request: Request):
     if body.package not in PACKAGES:
         raise HTTPException(400, "Invalid package")
+
     user = await db.users.find_one({"device_id": body.device_id})
     if not user:
         raise HTTPException(404, "User not found")
+
     if not STRIPE_KEY:
         raise HTTPException(500, "Stripe not configured")
 
     pkg = PACKAGES[body.package]
+    price_id = os.environ.get(pkg["price_env"])
+    if not price_id:
+        raise HTTPException(500, f"Stripe price not configured: {pkg['price_env']}")
+
     origin = body.origin_url.rstrip("/")
     success_url = f"{origin}/premium/success?session_id={{CHECKOUT_SESSION_ID}}"
     cancel_url = f"{origin}/premium"
-
-    host_url = str(request.base_url)
-    webhook_url = f"{host_url}api/webhook/stripe"
-    stripe_checkout = StripeCheckout(api_key=STRIPE_KEY, webhook_url=webhook_url)
 
     metadata = {
         "device_id": body.device_id,
         "package": body.package,
         "source": "cot_web",
     }
-    req = CheckoutSessionRequest(
-        amount=float(pkg["amount"]),
-        currency=pkg["currency"],
-        success_url=success_url,
-        cancel_url=cancel_url,
-        metadata=metadata,
-    )
-    session = await stripe_checkout.create_checkout_session(req)
 
-    # MANDATORY: create transaction record BEFORE returning
+    checkout_args = {
+        "mode": pkg["mode"],
+        "line_items": [{"price": price_id, "quantity": 1}],
+        "success_url": success_url,
+        "cancel_url": cancel_url,
+        "client_reference_id": body.device_id,
+        "metadata": metadata,
+    }
+
+    if pkg["mode"] == "subscription":
+        checkout_args["subscription_data"] = {"metadata": metadata}
+    else:
+        checkout_args["customer_creation"] = "always"
+
+    try:
+        session = stripe.checkout.Session.create(**checkout_args)
+    except Exception as e:
+        logger.warning("Stripe checkout create failed: %s", type(e).__name__)
+        raise HTTPException(502, f"Stripe checkout failed: {type(e).__name__}")
+
+    def sget(obj, key, default=None):
+        return obj.get(key, default) if hasattr(obj, "get") else getattr(obj, key, default)
+
+    session_id = sget(session, "id")
+    session_url = sget(session, "url")
+
     await db.payment_transactions.insert_one({
-        "session_id": session.session_id,
+        "session_id": session_id,
         "device_id": body.device_id,
         "package": body.package,
         "amount": float(pkg["amount"]),
         "currency": pkg["currency"],
+        "stripe_price_id": price_id,
+        "stripe_customer_id": sget(session, "customer"),
+        "stripe_subscription_id": sget(session, "subscription"),
         "payment_status": "initiated",
         "metadata": metadata,
         "created_at": iso(now()),
@@ -496,56 +520,69 @@ async def create_checkout(body: CheckoutRequest, request: Request):
         "granted": False,
     })
 
-    return CheckoutResponse(url=session.url, session_id=session.session_id)
+    return CheckoutResponse(url=session_url, session_id=session_id)
 
 
 @api.get("/checkout/status/{session_id}", response_model=CheckoutStatus)
 async def checkout_status(session_id: str, request: Request):
     if not STRIPE_KEY:
         raise HTTPException(500, "Stripe not configured")
+
     txn = await db.payment_transactions.find_one({"session_id": session_id}, {"_id": 0})
     if not txn:
         raise HTTPException(404, "Transaction not found")
 
-    host_url = str(request.base_url)
-    webhook_url = f"{host_url}api/webhook/stripe"
-    stripe_checkout = StripeCheckout(api_key=STRIPE_KEY, webhook_url=webhook_url)
-    status = await stripe_checkout.get_checkout_status(session_id)
+    try:
+        status = stripe.checkout.Session.retrieve(session_id)
+    except Exception as e:
+        logger.warning("Stripe checkout status failed: %s", type(e).__name__)
+        raise HTTPException(502, f"Stripe status failed: {type(e).__name__}")
 
-    # Update transaction
+    def sget(obj, key, default=None):
+        return obj.get(key, default) if hasattr(obj, "get") else getattr(obj, key, default)
+
+    payment_status = sget(status, "payment_status")
+    stripe_status = sget(status, "status")
+    amount_total = sget(status, "amount_total")
+    currency = sget(status, "currency")
+    granted = txn.get("granted", False)
+
     update: Dict[str, Any] = {
-        "payment_status": status.payment_status,
-        "status": status.status,
-        "amount_total": status.amount_total,
+        "payment_status": payment_status,
+        "status": stripe_status,
+        "amount_total": amount_total,
+        "currency": currency,
+        "stripe_customer_id": sget(status, "customer"),
+        "stripe_subscription_id": sget(status, "subscription"),
         "updated_at": iso(now()),
     }
-    granted = txn.get("granted", False)
-    if status.payment_status == "paid" and not granted:
-        # Grant the package — idempotent via the `granted` flag
+
+    if payment_status == "paid" and not granted:
         await _grant_package(txn["device_id"], txn["package"])
         update["granted"] = True
+        granted = True
+
         await db.analytics_events.insert_one({
             "device_id": txn["device_id"],
             "event": "purchase_completed",
             "properties": {"package": txn["package"], "amount": txn["amount"]},
             "timestamp": iso(now()),
         })
-        # If user was referred, mark referral rewarded
+
         user = await db.users.find_one({"device_id": txn["device_id"]})
         if user and user.get("referrer_device_id"):
             await db.referrals.update_one(
                 {"device_id": txn["device_id"]},
                 {"$set": {"rewarded": True, "rewarded_at": iso(now())}},
             )
-        granted = True
 
     await db.payment_transactions.update_one({"session_id": session_id}, {"$set": update})
 
     return CheckoutStatus(
-        payment_status=status.payment_status,
-        status=status.status,
-        amount_total=status.amount_total,
-        currency=status.currency,
+        payment_status=payment_status,
+        status=stripe_status,
+        amount_total=amount_total,
+        currency=currency,
         package=txn.get("package"),
         granted=granted,
     )
@@ -553,31 +590,71 @@ async def checkout_status(session_id: str, request: Request):
 
 @api.post("/webhook/stripe")
 async def stripe_webhook(request: Request):
-    """Webhook handler — extra layer in case redirect-back doesn't fire."""
+    """Stripe webhook handler for completed checkout and monthly renewals."""
     if not STRIPE_KEY:
         return {"ok": False, "reason": "stripe_not_configured"}
-    body = await request.body()
-    sig = request.headers.get("Stripe-Signature", "")
-    host_url = str(request.base_url)
-    webhook_url = f"{host_url}api/webhook/stripe"
-    stripe_checkout = StripeCheckout(api_key=STRIPE_KEY, webhook_url=webhook_url)
-    try:
-        resp = await stripe_checkout.handle_webhook(body, sig)
-    except Exception as e:
-        logger.warning("Webhook parse failed: %s", e)
-        return {"ok": False, "error": str(e)}
 
-    if resp and getattr(resp, "session_id", None) and getattr(resp, "payment_status", None) == "paid":
-        sid = resp.session_id
+    payload = await request.body()
+    sig = request.headers.get("Stripe-Signature", "")
+
+    try:
+        if STRIPE_WEBHOOK_SECRET:
+            event = stripe.Webhook.construct_event(payload, sig, STRIPE_WEBHOOK_SECRET)
+        else:
+            import json as _json
+            event = _json.loads(payload.decode("utf-8"))
+    except Exception as e:
+        logger.warning("Webhook parse failed: %s", type(e).__name__)
+        raise HTTPException(400, "Invalid Stripe webhook")
+
+    def eget(obj, key, default=None):
+        return obj.get(key, default) if hasattr(obj, "get") else getattr(obj, key, default)
+
+    event_type = eget(event, "type")
+    data = eget(event, "data", {}) or {}
+    obj = eget(data, "object", {}) or {}
+
+    if event_type == "checkout.session.completed":
+        sid = eget(obj, "id")
+        payment_status = eget(obj, "payment_status")
+
         txn = await db.payment_transactions.find_one({"session_id": sid})
-        if txn and not txn.get("granted"):
-            await _grant_package(txn["device_id"], txn["package"])
-            await db.payment_transactions.update_one(
-                {"session_id": sid},
-                {"$set": {"granted": True, "payment_status": "paid", "updated_at": iso(now())}},
-            )
-            logger.info("Webhook granted %s for %s", txn["package"], txn["device_id"])
-    return {"ok": True}
+        if txn:
+            update = {
+                "payment_status": payment_status,
+                "status": eget(obj, "status"),
+                "stripe_customer_id": eget(obj, "customer"),
+                "stripe_subscription_id": eget(obj, "subscription"),
+                "updated_at": iso(now()),
+            }
+
+            if payment_status == "paid" and not txn.get("granted"):
+                await _grant_package(txn["device_id"], txn["package"])
+                update["granted"] = True
+                logger.info("Webhook granted %s for %s", txn["package"], txn["device_id"])
+
+            await db.payment_transactions.update_one({"session_id": sid}, {"$set": update})
+
+    elif event_type in ("invoice.paid", "invoice.payment_succeeded"):
+        sub_id = eget(obj, "subscription")
+        if sub_id:
+            txn = await db.payment_transactions.find_one({
+                "stripe_subscription_id": sub_id,
+                "package": "monthly",
+            })
+            if txn:
+                await _grant_package(txn["device_id"], "monthly")
+                await db.payment_transactions.update_one(
+                    {"session_id": txn["session_id"]},
+                    {"$set": {
+                        "payment_status": "paid",
+                        "last_invoice_id": eget(obj, "id"),
+                        "updated_at": iso(now()),
+                    }},
+                )
+                logger.info("Webhook extended monthly premium for %s", txn["device_id"])
+
+    return {"ok": True, "type": event_type}
 
 
 @api.post("/analytics/event")
@@ -720,12 +797,19 @@ async def push_send_streak_reminders(request: Request):
 async def _run_streak_reminder_job() -> Dict[str, int]:
     """Send streak reminders to devices last pushed >= 3 days ago.
     Purges dead subscriptions automatically. Returns counts.
+
+    Batched to 500 records per run so we don't load the entire collection
+    into memory at once when the user base grows.
     """
     cutoff = now() - timedelta(days=3)
     sent = 0
     skipped = 0
     purged = 0
-    async for rec in db.push_subscriptions.find({}):
+    cursor = db.push_subscriptions.find(
+        {},
+        {"subscription": 1, "last_streak_push": 1, "device_id": 1},
+    ).limit(500)
+    async for rec in cursor:
         last = rec.get("last_streak_push")
         last_dt = None
         if last:
