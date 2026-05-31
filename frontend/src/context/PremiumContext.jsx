@@ -130,7 +130,7 @@ export const PremiumProvider = ({ children }) => {
     try {
       const end = new Date(premium.premium_until);
       const days = (end - new Date()) / (1000 * 60 * 60 * 24);
-      return Math.max(0, Math.ceil(days));
+      return Math.max(0, Math.floor(days));
     } catch { return null; }
   }, [premium]);
 
