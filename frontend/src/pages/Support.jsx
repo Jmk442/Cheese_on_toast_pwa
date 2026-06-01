@@ -3,7 +3,7 @@ import { ArrowLeft, Mail, RotateCcw, HelpCircle, CreditCard, MessageSquare, Shie
 import { SeoHead } from "../components/SeoHead";
 
 const CONTACT_EMAIL = "john.create@protonmail.com";
-const STRIPE_PORTAL = "https://billing.stripe.com/p/login/test_aEU3eM8YDfPC9MAdQQ"; // TODO: replace with real customer portal link
+const STRIPE_PORTAL = "https://billing.stripe.com/p/login/bJefZhe2V9O13ir2657Re01";
 
 const FAQS = [
   {
