@@ -19,6 +19,7 @@ import GroceryList from "@/pages/GroceryList";
 import SavedRecipes from "@/pages/SavedRecipes";
 import Settings from "@/pages/Settings";
 import AuthVerify from "@/pages/AuthVerify";
+import Support from "@/pages/Support";
 import { Privacy, Terms } from "@/pages/Legal";
 
 function App() {
@@ -46,6 +47,7 @@ function App() {
             <Route path="/auth/verify" element={<AuthVerify />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
+            <Route path="/support" element={<Support />} />
             <Route path="*" element={<Home />} />
           </Routes>
         </Layout>

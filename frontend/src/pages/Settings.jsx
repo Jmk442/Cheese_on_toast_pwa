@@ -115,6 +115,24 @@ export default function Settings() {
               Upgrade to Lifetime (A$24.99)
             </Link>
           )}
+          {isPremium && !isTrial && (
+            <a
+              href="https://billing.stripe.com/p/login/bJefZhe2V9O13ir2657Re01"
+              target="_blank"
+              rel="noopener noreferrer"
+              data-testid="settings-manage-billing"
+              className="font-mono text-[11px] uppercase tracking-widest text-brand-primary hover:underline inline-flex items-center gap-1 pt-1"
+            >
+              Manage subscription / cancel →
+            </a>
+          )}
+          <Link
+            to="/support"
+            data-testid="settings-support-link"
+            className="font-mono text-[10px] uppercase tracking-widest text-foreground/50 hover:text-brand-primary inline-flex items-center gap-1 pt-1"
+          >
+            Need help? Contact support →
+          </Link>
         </div>
       </section>
 
