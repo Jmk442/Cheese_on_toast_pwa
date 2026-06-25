@@ -1,16 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>/</loc><priority>1.0</priority></url>
-  <url><loc>/recipe/cheese-on-toast</loc><priority>1.0</priority></url>
-  <url><loc>/simulator</loc><priority>0.9</priority></url>
-  <url><loc>/simulator/boiled-rice</loc><priority>0.8</priority></url>
-  <url><loc>/simulator/saucepan-heating</loc><priority>0.8</priority></url>
-  <url><loc>/recipe/fried-rice</loc><priority>0.8</priority></url>
-  <url><loc>/recipe/sushi-rolls</loc><priority>0.8</priority></url>
-  <url><loc>/recipe/boiled-rice</loc><priority>0.8</priority></url>
-  <url><loc>/recipe/saucepan-heating</loc><priority>0.8</priority></url>
-  <url><loc>/recipe/scrambled-eggs</loc><priority>0.7</priority></url>
-  <url><loc>/recipe/simple-pasta</loc><priority>0.7</priority></url>
-  <url><loc>/recipe/beans-on-toast</loc><priority>0.8</priority></url>
-  <url><loc>/achievements</loc><priority>0.6</priority></url>
+  <url><loc>https://toasted-cheese-map.emergent.host/</loc><priority>1.0</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://toasted-cheese-map.emergent.host/recipes</loc><priority>0.9</priority><changefreq>weekly</changefreq></url>
+
+  <!-- Flagship recipe -->
+  <url><loc>https://toasted-cheese-map.emergent.host/recipe/cheese-on-toast</loc><priority>1.0</priority><changefreq>weekly</changefreq></url>
+
+  <!-- Other recipes -->
+  <url><loc>https://toasted-cheese-map.emergent.host/recipe/fried-rice</loc><priority>0.8</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://toasted-cheese-map.emergent.host/recipe/sushi-rolls</loc><priority>0.8</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://toasted-cheese-map.emergent.host/recipe/boiled-rice</loc><priority>0.8</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://toasted-cheese-map.emergent.host/recipe/saucepan-heating</loc><priority>0.8</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://toasted-cheese-map.emergent.host/recipe/scrambled-eggs</loc><priority>0.7</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://toasted-cheese-map.emergent.host/recipe/simple-pasta</loc><priority>0.7</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://toasted-cheese-map.emergent.host/recipe/beans-on-toast</loc><priority>0.7</priority><changefreq>monthly</changefreq></url>
+
+  <!-- Simulators (interactive content) -->
+  <url><loc>https://toasted-cheese-map.emergent.host/simulator</loc><priority>0.9</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://toasted-cheese-map.emergent.host/simulator/boiled-rice</loc><priority>0.8</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://toasted-cheese-map.emergent.host/simulator/saucepan-heating</loc><priority>0.8</priority><changefreq>monthly</changefreq></url>
+
+  <!-- App features -->
+  <url><loc>https://toasted-cheese-map.emergent.host/achievements</loc><priority>0.6</priority><changefreq>monthly</changefreq></url>
+
+  <!-- Legal / support -->
+  <url><loc>https://toasted-cheese-map.emergent.host/privacy</loc><priority>0.3</priority><changefreq>yearly</changefreq></url>
+  <url><loc>https://toasted-cheese-map.emergent.host/terms</loc><priority>0.3</priority><changefreq>yearly</changefreq></url>
+  <url><loc>https://toasted-cheese-map.emergent.host/support</loc><priority>0.4</priority><changefreq>monthly</changefreq></url>
 </urlset>

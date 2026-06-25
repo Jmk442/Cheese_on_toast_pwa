@@ -187,13 +187,14 @@ export default function Paywall() {
         </Link>
       </section>
 
-      <section data-testid="trust-section" className="space-y-2 pb-4">
-        <h2 className="font-display font-black uppercase tracking-tight text-xl">Why parents choose this</h2>
+      <section data-testid="trust-section" className="space-y-3 pb-4">
+        <h2 className="font-display font-black uppercase tracking-tight text-xl">Why parents like this</h2>
         <ul className="space-y-2 font-mono text-sm text-foreground/80">
-          <li className="border-l-2 border-brand-primary pl-3">"My 14yo now makes their own dinner. Best A$4 ever." — Rachel, Melbourne</li>
-          <li className="border-l-2 border-brand-primary pl-3">"He cooked the whole family pasta last week. I cried a bit." — Mark, Sydney</li>
+          <li className="border-l-2 border-brand-primary pl-3">Built and hosted in Australia — ABN 82 097 590 964, registered to Queensland.</li>
+          <li className="border-l-2 border-brand-primary pl-3">No ads. No data sold. <Link to="/privacy" className="text-brand-primary underline">Privacy Act-compliant</Link> with full disclosure of every processor.</li>
+          <li className="border-l-2 border-brand-primary pl-3">3-day free trial, no card required. Cancel anytime in one tap.</li>
+          <li className="border-l-2 border-brand-primary pl-3">Real human support — <Link to="/support" className="text-brand-primary underline">john.create@protonmail.com</Link>.</li>
         </ul>
-        <p className="font-mono text-[10px] uppercase tracking-widest text-foreground/40">* Testimonials. Real reviews coming soon.</p>
       </section>
     </div>
   );

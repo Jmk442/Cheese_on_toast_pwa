@@ -1,4 +1,12 @@
 User-agent: *
 Allow: /
 
-Sitemap: /sitemap.xml
+# Disallow private/utility routes (no SEO value, can leak personal context)
+Disallow: /settings
+Disallow: /saved
+Disallow: /auth/
+Disallow: /grocery-list
+Disallow: /premium/success
+Disallow: /meal-plan
+
+Sitemap: https://toasted-cheese-map.emergent.host/sitemap.xml

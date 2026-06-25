@@ -100,7 +100,14 @@ export function Privacy() {
         <li><strong>App activity</strong> — which simulators you play, outcomes, badges earned, theme selections, page views.</li>
         <li><strong>Payment metadata</strong> — if you subscribe, our payment processor Stripe handles the card itself. We only receive a Stripe customer/session ID, the package you bought, and renewal/expiry dates. <strong>We never see your card number.</strong></li>
         <li><strong>Technical data</strong> — IP address, browser type and operating system, captured in standard server logs for security and debugging.</li>
-        <li><strong>Cookies & local storage</strong> — we use browser <code>localStorage</code> to remember your settings and achievements offline. No third-party advertising cookies.</li>
+        <li>
+          <strong>Analytics data</strong> — we use <strong>Google Analytics 4</strong> and <strong>Plausible Analytics</strong>
+          to measure how the app is used. Google Analytics 4 may set first-party cookies
+          (with <em>IP anonymisation</em> enabled). Plausible is cookie-less. These tools record
+          aggregated, mostly-anonymous information such as page views, device type, country,
+          referring website and the buttons you tap.
+        </li>
+        <li><strong>Browser local storage</strong> — we use <code>localStorage</code> to remember your settings, theme and achievements offline. This data never leaves your device.</li>
       </UL>
 
       <SectionHeading id="why">3. Why we collect it</SectionHeading>
@@ -118,11 +125,13 @@ export function Privacy() {
       <UL>
         <li><strong>Stripe, Inc.</strong> — payment processing. Stripe is PCI-DSS compliant. <a className="underline text-brand-primary" href="https://stripe.com/au/privacy" target="_blank" rel="noreferrer">stripe.com/au/privacy</a></li>
         <li><strong>Resend, Inc.</strong> — sending magic-link sign-in emails. <a className="underline text-brand-primary" href="https://resend.com/legal/privacy-policy" target="_blank" rel="noreferrer">resend.com/legal/privacy-policy</a></li>
+        <li><strong>Google LLC — Google Analytics 4</strong> — aggregate usage analytics. IP anonymisation is enabled. <a className="underline text-brand-primary" href="https://policies.google.com/privacy" target="_blank" rel="noreferrer">policies.google.com/privacy</a>. You can opt out using the <a className="underline text-brand-primary" href="https://tools.google.com/dlpage/gaoptout" target="_blank" rel="noreferrer">Google Analytics Opt-out Browser Add-on</a>.</li>
+        <li><strong>Plausible Analytics</strong> — cookie-less site analytics, EU-hosted. <a className="underline text-brand-primary" href="https://plausible.io/privacy-focused-web-analytics" target="_blank" rel="noreferrer">plausible.io/privacy-focused-web-analytics</a></li>
         <li><strong>Emergent Labs (hosting platform)</strong> — runs our backend infrastructure.</li>
         <li><strong>MongoDB Atlas</strong> — hosted database for your account & achievements.</li>
         <li><strong>Google (Gemini API)</strong> — used internally to generate the AI illustrations on our recipe pages. <strong>Your personal data is not sent to Google.</strong></li>
       </UL>
-      <P>We <strong>do not</strong> sell your personal information, ever.</P>
+      <P>We <strong>do not</strong> currently run third-party advertising. If we ever introduce advertising or remarketing in future, we will update this policy <em>before</em> turning it on and disclose what data is shared with which ad networks. We never sell your personal information.</P>
 
       <SectionHeading id="overseas">5. Overseas disclosure</SectionHeading>
       <P>

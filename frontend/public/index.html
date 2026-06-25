@@ -1,6 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <!-- Google Analytics 4 — placed first so page views fire immediately.    -->
+    <!-- 👉 TO CHANGE GA ID: edit BOTH instances of the Measurement ID below. -->
+    <!--    Current ID: G-76DB751FH3                                          -->
+    <!--    Production placeholder reference: G-XXXXXXXXXX                    -->
+    <!-- The Measurement ID is NOT a secret — it is public website config.    -->
+    <!-- ───────────────────────────────────────────────────────────────── -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-76DB751FH3"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-76DB751FH3', { anonymize_ip: true });
+    </script>
+
+    <!-- Plausible Analytics (privacy-friendly, cookieless, complements GA4) -->
+    <script defer data-domain="toasted-cheese-map.emergent.host" src="https://plausible.io/js/script.js"></script>
+
     <meta charset="utf-8" />
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -16,21 +34,7 @@
     <meta name="keywords" content="how to make cheese on toast, cheese on toast recipe, cheese toast, toasted cheese, simple recipes for teens, how to boil rice, fried rice recipe, how to make sushi, no microwave recipes, heat food in saucepan, learn to cook teens" />
     <meta name="author" content="Cheese on Toast App" />
     <meta name="robots" content="index, follow, max-image-preview:large" />
-    <link rel="canonical" href="/" />
-
-    <!-- Plausible Analytics (privacy-friendly, no cookies, no consent banner needed) -->
-    <!-- To activate: sign up free at plausible.io, add domain 'toasted-cheese-map.emergent.host', -->
-    <!-- then this script will start counting. Until activated it 404s silently — no impact. -->
-    <script defer data-domain="toasted-cheese-map.emergent.host" src="https://plausible.io/js/script.js"></script>
-
-    <!-- Google Analytics 4 (GA4) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-76DB751FH3"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-76DB751FH3', { anonymize_ip: true });
-    </script>
+    <link rel="canonical" href="https://toasted-cheese-map.emergent.host/" />
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
