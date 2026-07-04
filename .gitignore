@@ -34,12 +34,15 @@ dist
 .env
 .env.*
 !.env.template
+!.env.example
 backend/.env
 backend/.env.*
+!backend/.env.example
 frontend/.env.local
 frontend/.env.development.local
 frontend/.env.production.local
 frontend/.env.test.local
+!frontend/.env.example
 
 *token.json*
 *credentials.json*
